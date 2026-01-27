@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -25,6 +25,7 @@ import { AlertCircle, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/mode-toggle";
 import { GoldPriceCard } from "@/components/gold-price-card";
+import { AccumulationSimulator } from "@/components/accumulation-simulator";
 
 type Category = {
   id: string;
@@ -43,6 +44,10 @@ const DEFAULT_CATEGORIES: Category[] = [
 export default function InvestCalculator() {
   const [amount, setAmount] = useState<number | "">("");
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+
+  useEffect(() => {
+    document.title = "Invest Calculator";
+  }, []);
 
   const totalPercentage = useMemo(() => {
     return categories.reduce((sum, cat) => sum + cat.percentage, 0);
@@ -281,6 +286,9 @@ export default function InvestCalculator() {
                 </CardFooter>
               )}
             </Card>
+
+            {/* Accumulation Simulator */}
+            <AccumulationSimulator />
           </div>
         </div>
       </div>
