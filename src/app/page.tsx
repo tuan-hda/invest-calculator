@@ -24,6 +24,7 @@ import {
 import { AlertCircle, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/mode-toggle";
+import { GoldPriceCard } from "@/components/gold-price-card";
 
 type Category = {
   id: string;
@@ -194,11 +195,12 @@ export default function InvestCalculator() {
                 </div>
               </CardContent>
             </Card>
+            <GoldPriceCard />
           </div>
 
           {/* Results Section */}
           <div className="space-y-6">
-            <Card className="h-full flex flex-col bg-white dark:bg-slate-900">
+            <Card className=" flex flex-col bg-white dark:bg-slate-900">
               <CardHeader className="border-b-2 border-black dark:border-white pb-4">
                 <CardTitle className="text-2xl font-black uppercase tracking-tight">
                   Breakdown
