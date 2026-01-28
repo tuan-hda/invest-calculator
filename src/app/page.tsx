@@ -21,11 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertCircle, RotateCcw } from "lucide-react";
+import { AlertCircle, RotateCcw, Save, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/mode-toggle";
 import { GoldPriceCard } from "@/components/gold-price-card";
-import { AccumulationManager } from "@/components/accumulation-simulator";
+import { useAccumulation } from "@/hooks/use-accumulation";
+import { WalletStatus } from "@/components/wallet-status";
 
 type Category = {
   id: string;
@@ -45,9 +46,31 @@ export default function InvestCalculator() {
   const [amount, setAmount] = useState<number | "">("");
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
 
+  const {
+    state: accumulationState,
+    proposal,
+    loadingPrice,
+    calculateProposal,
+    confirmTransaction,
+    resetState,
+    clearProposal,
+  } = useAccumulation();
+
   useEffect(() => {
     document.title = "Invest Calculator";
   }, []);
+
+  // Debounced calculation for accumulation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (typeof amount === "number" && amount > 0) {
+        calculateProposal(amount);
+      } else {
+        clearProposal();
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [amount, calculateProposal, clearProposal]);
 
   const totalPercentage = useMemo(() => {
     return categories.reduce((sum, cat) => sum + cat.percentage, 0);
@@ -77,6 +100,7 @@ export default function InvestCalculator() {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
+      maximumFractionDigits: 0,
     }).format(value);
   };
 
@@ -200,12 +224,14 @@ export default function InvestCalculator() {
                 </div>
               </CardContent>
             </Card>
+
+            <WalletStatus state={accumulationState} onReset={resetState} />
             <GoldPriceCard />
           </div>
 
           {/* Results Section */}
           <div className="space-y-6">
-            <Card className=" flex flex-col bg-white dark:bg-slate-900">
+            <Card className=" flex flex-col bg-white dark:bg-slate-900 border-2 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
               <CardHeader className="border-b-2 border-black dark:border-white pb-4">
                 <CardTitle className="text-2xl font-black uppercase tracking-tight">
                   Breakdown
@@ -224,58 +250,97 @@ export default function InvestCalculator() {
                     </p>
                   </div>
                 ) : (
-                  <div className="border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] bg-white dark:bg-slate-900 overflow-hidden">
-                    <Table>
-                      <TableHeader className="bg-black dark:bg-white">
-                        <TableRow className="border-b-2 border-black dark:border-white hover:bg-black dark:hover:bg-white">
-                          <TableHead className="text-white dark:text-black font-bold uppercase tracking-wider">
-                            Category
-                          </TableHead>
-                          <TableHead className="text-right text-white dark:text-black font-bold uppercase tracking-wider">
-                            Alloc
-                          </TableHead>
-                          <TableHead className="text-right text-white dark:text-black font-bold uppercase tracking-wider">
-                            Amount (VND)
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {categories.map((category) => {
-                          const marketValue =
-                            (typeof amount === "number" ? amount : 0) *
-                            (category.percentage / 100);
-                          return (
-                            <TableRow
-                              key={category.id}
-                              className="border-b-2 border-black dark:border-white hover:bg-yellow-100 dark:hover:bg-slate-800 transition-colors"
-                            >
-                              <TableCell className="font-bold text-black dark:text-white border-r-2 border-black dark:border-white">
-                                {category.name}
-                              </TableCell>
-                              <TableCell className="text-right font-mono font-bold text-black dark:text-white border-r-2 border-black dark:border-white">
-                                {category.percentage}%
-                              </TableCell>
-                              <TableCell className="text-right font-mono font-bold text-black dark:text-white">
-                                {formatCurrency(marketValue)}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                        <TableRow className="bg-violet-200 dark:bg-violet-900 font-black border-t-2 border-black dark:border-white hover:bg-violet-300 dark:hover:bg-violet-800">
-                          <TableCell className="uppercase border-r-2 border-black dark:border-white text-black dark:text-white">
-                            Total
-                          </TableCell>
-                          <TableCell className="text-right border-r-2 border-black dark:border-white text-black dark:text-white">
-                            {totalPercentage}%
-                          </TableCell>
-                          <TableCell className="text-right text-black dark:text-white">
-                            {formatCurrency(
-                              typeof amount === "number" ? amount : 0,
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
+                  <div className="space-y-6">
+                    <div className="border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] bg-white dark:bg-slate-900 overflow-hidden">
+                      <Table>
+                        <TableHeader className="bg-black dark:bg-white">
+                          <TableRow className="border-b-2 border-black dark:border-white hover:bg-black dark:hover:bg-white">
+                            <TableHead className="text-white dark:text-black font-bold uppercase tracking-wider">
+                              Category
+                            </TableHead>
+                            <TableHead className="text-right text-white dark:text-black font-bold uppercase tracking-wider">
+                              Alloc
+                            </TableHead>
+                            <TableHead className="text-right text-white dark:text-black font-bold uppercase tracking-wider">
+                              Amount (VND)
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {categories.map((category) => {
+                            const marketValue =
+                              (typeof amount === "number" ? amount : 0) *
+                              (category.percentage / 100);
+                            return (
+                              <TableRow
+                                key={category.id}
+                                className="border-b-2 border-black dark:border-white hover:bg-yellow-100 dark:hover:bg-slate-800 transition-colors"
+                              >
+                                <TableCell className="font-bold text-black dark:text-white border-r-2 border-black dark:border-white">
+                                  {category.name}
+                                </TableCell>
+                                <TableCell className="text-right font-mono font-bold text-black dark:text-white border-r-2 border-black dark:border-white">
+                                  {category.percentage}%
+                                </TableCell>
+                                <TableCell className="text-right font-mono font-bold text-black dark:text-white">
+                                  {formatCurrency(marketValue)}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                          <TableRow className="bg-violet-200 dark:bg-violet-900 font-black border-t-2 border-black dark:border-white hover:bg-violet-300 dark:hover:bg-violet-800">
+                            <TableCell className="uppercase border-r-2 border-black dark:border-white text-black dark:text-white">
+                              Total
+                            </TableCell>
+                            <TableCell className="text-right border-r-2 border-black dark:border-white text-black dark:text-white">
+                              {totalPercentage}%
+                            </TableCell>
+                            <TableCell className="text-right text-black dark:text-white">
+                              {formatCurrency(
+                                typeof amount === "number" ? amount : 0,
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Accumulation Action Proposal */}
+                    <div className="p-4 border-2 border-black dark:border-white bg-green-50 dark:bg-green-900/20 rounded shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-black uppercase text-sm mb-2 text-green-700 dark:text-green-400">
+                            Accumulation Plan
+                          </h4>
+                          {loadingPrice ? (
+                            <div className="text-sm font-bold text-gray-400 animate-pulse">
+                              Calculating plan...
+                            </div>
+                          ) : proposal ? (
+                            <div className="text-sm font-medium">
+                              <p className="mb-1">{proposal.action}</p>
+                              <div className="text-xs text-gray-500 font-bold">
+                                Effect: Gold{" "}
+                                {formatCurrency(proposal.goldCashAfter)} | Bond{" "}
+                                {formatCurrency(proposal.bondCashAfter)}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-sm text-gray-500 font-bold">
+                              Enter amount to see plan.
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          disabled={!proposal}
+                          onClick={confirmTransaction}
+                          className="font-bold uppercase bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 border-2 border-transparent shadow-[2px_2px_0px_0px_rgba(100,100,100,0.5)] active:shadow-none active:translate-y-[2px] transition-all"
+                        >
+                          <Save className="mr-2 h-4 w-4" />
+                          Save
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -287,8 +352,60 @@ export default function InvestCalculator() {
               )}
             </Card>
 
-            {/* Accumulation Manager */}
-            <AccumulationManager />
+            {/* History Table */}
+            {accumulationState && accumulationState.history.length > 0 && (
+              <Card className="bg-white dark:bg-slate-900 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+                <CardHeader className="py-3 border-b-2 border-black dark:border-white">
+                  <CardTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
+                    <History className="h-5 w-5" />
+                    Accumulation History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="max-h-[300px] overflow-auto">
+                    <Table>
+                      <TableHeader className="bg-gray-100 dark:bg-slate-800 sticky top-0">
+                        <TableRow>
+                          <TableHead className="font-bold uppercase text-xs w-[100px] pl-4">
+                            Date
+                          </TableHead>
+                          <TableHead className="font-bold uppercase text-xs text-right">
+                            Input
+                          </TableHead>
+                          <TableHead className="font-bold uppercase text-xs">
+                            Action
+                          </TableHead>
+                          <TableHead className="font-bold uppercase text-xs text-right pr-4">
+                            Gold+
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {accumulationState.history.map((tx) => (
+                          <TableRow
+                            key={tx.id}
+                            className="border-b border-gray-100 dark:border-gray-800 last:border-0"
+                          >
+                            <TableCell className="font-bold text-xs pl-4 py-3">
+                              {tx.date}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs text-right py-3">
+                              {Math.round(tx.monthlyAmount / 1000000)}M
+                            </TableCell>
+                            <TableCell className="text-xs font-medium py-3 max-w-[200px] leading-tight">
+                              {tx.action}
+                            </TableCell>
+                            <TableCell className="font-bold text-xs text-right pr-4 py-3 text-green-600 dark:text-green-400">
+                              {tx.goldBought > 0 ? `${tx.goldBought}` : "-"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
