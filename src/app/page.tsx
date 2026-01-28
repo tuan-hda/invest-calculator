@@ -25,7 +25,7 @@ import { AlertCircle, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/mode-toggle";
 import { GoldPriceCard } from "@/components/gold-price-card";
-import { AccumulationSimulator } from "@/components/accumulation-simulator";
+import { AccumulationManager } from "@/components/accumulation-simulator";
 
 type Category = {
   id: string;
@@ -287,8 +287,8 @@ export default function InvestCalculator() {
               )}
             </Card>
 
-            {/* Accumulation Simulator */}
-            <AccumulationSimulator />
+            {/* Accumulation Manager */}
+            <AccumulationManager />
           </div>
         </div>
       </div>
