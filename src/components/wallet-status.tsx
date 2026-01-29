@@ -44,36 +44,34 @@ export function WalletStatus({ state, onReset }: WalletStatusProps) {
       </CardHeader>
       <CardContent className="p-4 space-y-3">
         <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-          Pending Funds
+          Inter-Fund Borrowing
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="p-2 border border-dashed border-black dark:border-white rounded bg-yellow-50 dark:bg-yellow-900/10">
-            <div className="text-[10px] font-black uppercase text-yellow-700 dark:text-yellow-400">
-              Gold Fund
-            </div>
-            <div className="font-mono font-bold text-sm">
-              {formatCurrency(state.goldCash)}
+        {state.goldOwesStock === 0 && state.stockOwesGold === 0 ? (
+          <div className="p-4 border border-dashed border-black dark:border-white rounded bg-gray-50 dark:bg-gray-900/10 text-center">
+            <div className="text-sm font-bold text-gray-400 dark:text-gray-500">
+              No outstanding debts
             </div>
           </div>
-          <div className="p-2 border border-dashed border-black dark:border-white rounded bg-green-50 dark:bg-green-900/10">
-            <div className="text-[10px] font-black uppercase text-green-700 dark:text-green-400">
-              Stock Fund
-            </div>
-            <div className="font-mono font-bold text-sm">
-              {formatCurrency(state.stockCash)}
-            </div>
-          </div>
-        </div>
-        {(state.goldOwesStock > 0 || state.stockOwesGold > 0) && (
-          <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-1">
+        ) : (
+          <div className="grid grid-cols-1 gap-2">
             {state.goldOwesStock > 0 && (
-              <div className="text-xs font-bold text-red-500">
-                Gold owes Stock: {formatCurrency(state.goldOwesStock)}
+              <div className="p-3 border-2 border-black dark:border-white rounded bg-yellow-300 dark:bg-red-900/10 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
+                <div className="text-[10px] font-black uppercase text-black dark:text-red-400 mb-1">
+                  Gold owes Stock
+                </div>
+                <div className="font-mono font-bold text-lg text-red-600 dark:text-red-400">
+                  {formatCurrency(state.goldOwesStock)}
+                </div>
               </div>
             )}
             {state.stockOwesGold > 0 && (
-              <div className="text-xs font-bold text-red-500">
-                Stock owes Gold: {formatCurrency(state.stockOwesGold)}
+              <div className="p-3 border-2 border-black dark:border-white rounded bg-orange-50 dark:bg-orange-900/10 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
+                <div className="text-[10px] font-black uppercase text-orange-700 dark:text-orange-400 mb-1">
+                  Stock owes Gold
+                </div>
+                <div className="font-mono font-bold text-lg text-orange-600 dark:text-orange-400">
+                  {formatCurrency(state.stockOwesGold)}
+                </div>
               </div>
             )}
           </div>

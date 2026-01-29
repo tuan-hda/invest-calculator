@@ -43,7 +43,7 @@ const DEFAULT_STATE: AccumulationState = {
 
 const MIN_GOLD_UNIT = 0.5; // chi
 
-export function useAccumulation() {
+export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
   const [state, setState] = useState<AccumulationState | null>(null);
   const [proposal, setProposal] = useState<Transaction | null>(null);
   const [loadingPrice, setLoadingPrice] = useState(false);
@@ -138,6 +138,10 @@ export function useAccumulation() {
         };
 
         // 1. Repayment Phase (Prioritize Stock debt as it is the new mechanism)
+        // Track if repayment happened to prevent borrowing in same direction this period
+        let goldRepaidStocks = false;
+        let stockRepaidGold = false;
+
         if (goldOwesStock > 0) {
           const maxRepay = goldCash;
           const repayAmount = Math.min(goldOwesStock, maxRepay);
@@ -145,6 +149,7 @@ export function useAccumulation() {
           stockCash += repayAmount;
           goldOwesStock -= repayAmount;
           if (repayAmount > 0) {
+            goldRepaidStocks = true;
             note += `Trả nợ Stock ${new Intl.NumberFormat("vi-VN").format(repayAmount)}đ. `;
             adjustAllocation("gold", -repayAmount);
             adjustAllocation("stocks", repayAmount);
@@ -156,6 +161,7 @@ export function useAccumulation() {
           goldCash += repayAmount;
           stockOwesGold -= repayAmount;
           if (repayAmount > 0) {
+            stockRepaidGold = true;
             note += `Nhận nợ Stock ${new Intl.NumberFormat("vi-VN").format(repayAmount)}đ. `;
             adjustAllocation("stocks", -repayAmount);
             adjustAllocation("gold", repayAmount);
@@ -172,13 +178,26 @@ export function useAccumulation() {
           goldBought = buyAmount;
           goldCost = cost;
           note += `Mua ${buyAmount} chỉ. `;
+
+          // Handle leftover: if there's remaining cash that's not enough for another unit,
+          // transfer it to stocks (unless stock just repaid gold this period)
+          if (goldCash > 0 && !stockRepaidGold) {
+            const leftover = goldCash;
+            goldCash -= leftover;
+            stockCash += leftover;
+            stockOwesGold += leftover;
+            note += `Dồn ${new Intl.NumberFormat("vi-VN").format(leftover)}đ sang Stock. `;
+            adjustAllocation("gold", -leftover);
+            adjustAllocation("stocks", leftover);
+          }
         } else {
           // Check if we can borrow from STOCKS
           // Rule: Can borrow if total (goldCash + stockCash) >= pricePerMinUnit
+          // BUT cannot borrow if gold just repaid stocks this period
           const missing = pricePerMinUnit - goldCash;
           const maxBorrow = stockCash;
 
-          if (missing > 0 && missing <= maxBorrow) {
+          if (missing > 0 && missing <= maxBorrow && !goldRepaidStocks) {
             stockCash -= missing;
             goldCash += missing;
             goldOwesStock += missing;
@@ -192,7 +211,8 @@ export function useAccumulation() {
             note += `Mua 0.5 chỉ. `;
           } else {
             // "Dồn sang Stock" logic:
-            if (goldCash > 0) {
+            // Cannot transfer if stock just repaid gold this period
+            if (goldCash > 0 && !stockRepaidGold) {
               const transfer = goldCash;
               goldCash -= transfer;
               stockCash += transfer;
@@ -239,6 +259,7 @@ export function useAccumulation() {
       history: [proposal, ...state.history],
     });
     setProposal(null);
+    onConfirm?.();
   }, [proposal, state]);
 
   const resetState = useCallback(() => {

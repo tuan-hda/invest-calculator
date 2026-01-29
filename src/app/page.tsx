@@ -35,9 +35,9 @@ type Category = {
 };
 
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: "stocks", name: "Quỹ cổ phiếu", percentage: 35 },
-  { id: "bonds", name: "Quỹ trái phiếu", percentage: 20 },
-  { id: "gold", name: "Vàng", percentage: 20 },
+  { id: "stocks", name: "Quỹ cổ phiếu", percentage: 30 },
+  { id: "bonds", name: "Quỹ trái phiếu", percentage: 15 },
+  { id: "gold", name: "Vàng", percentage: 30 },
   { id: "savings", name: "Tiết kiệm", percentage: 20 },
   { id: "bitcoin", name: "Bitcoin", percentage: 5 },
 ];
@@ -54,7 +54,11 @@ export default function InvestCalculator() {
     confirmTransaction,
     resetState,
     clearProposal,
-  } = useAccumulation();
+  } = useAccumulation({
+    onConfirm: () => {
+      setAmount("");
+    },
+  });
 
   // Debounced calculation for accumulation
   useEffect(() => {
@@ -102,12 +106,12 @@ export default function InvestCalculator() {
 
   return (
     <div className="min-h-screen bg-yellow-300 dark:bg-slate-950 py-10 px-4 sm:px-6 lg:px-8 font-sans selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-300">
-      <div className="absolute top-4 right-4">
+      <div className="fixed top-4 right-4 z-50">
         <ModeToggle />
       </div>
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-black dark:text-white uppercase mb-4 shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] inline-block bg-black dark:bg-slate-900 text-white p-4 transform -rotate-2 border-2 border-white dark:border-white">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tighter dark:text-white uppercase mb-4 shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] inline-block bg-black dark:bg-slate-900 text-white p-4 transform -rotate-2 border-2 border-white dark:border-white">
             Investment Calculator
           </h1>
           <div>
@@ -420,7 +424,7 @@ export default function InvestCalculator() {
                                 ))}
                               </div>
                             </TableCell>
-                            <TableCell className="text-xs font-medium py-3 max-w-[150px] leading-tight align-top">
+                            <TableCell className="text-xs font-medium py-3 max-w-[150px] leading-tight whitespace-normal align-top">
                               {tx.action}
                             </TableCell>
                             <TableCell className="font-bold text-xs text-right pr-4 py-3 text-green-600 dark:text-green-400 align-top">
