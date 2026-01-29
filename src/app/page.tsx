@@ -56,21 +56,17 @@ export default function InvestCalculator() {
     clearProposal,
   } = useAccumulation();
 
-  useEffect(() => {
-    document.title = "Invest Calculator";
-  }, []);
-
   // Debounced calculation for accumulation
   useEffect(() => {
     const timer = setTimeout(() => {
       if (typeof amount === "number" && amount > 0) {
-        calculateProposal(amount);
+        calculateProposal(amount, categories);
       } else {
         clearProposal();
       }
     }, 800);
     return () => clearTimeout(timer);
-  }, [amount, calculateProposal, clearProposal]);
+  }, [amount, categories, calculateProposal]);
 
   const totalPercentage = useMemo(() => {
     return categories.reduce((sum, cat) => sum + cat.percentage, 0);
@@ -268,9 +264,19 @@ export default function InvestCalculator() {
                         </TableHeader>
                         <TableBody>
                           {categories.map((category) => {
-                            const marketValue =
-                              (typeof amount === "number" ? amount : 0) *
-                              (category.percentage / 100);
+                            // If a proposal exists, use the calculated effective amount
+                            // Otherwise, fallback to simple percentage calculation
+                            let marketValue = 0;
+                            if (proposal && proposal.allocations) {
+                              const alloc = proposal.allocations.find(
+                                (a) => a.id === category.id,
+                              );
+                              marketValue = alloc ? alloc.amount : 0;
+                            } else {
+                              marketValue =
+                                (typeof amount === "number" ? amount : 0) *
+                                (category.percentage / 100);
+                            }
                             return (
                               <TableRow
                                 key={category.id}
@@ -321,8 +327,7 @@ export default function InvestCalculator() {
                               <p className="mb-1">{proposal.action}</p>
                               <div className="text-xs text-gray-500 font-bold">
                                 Effect: Gold{" "}
-                                {formatCurrency(proposal.goldCashAfter)} | Bond{" "}
-                                {formatCurrency(proposal.bondCashAfter)}
+                                {formatCurrency(proposal.goldCashAfter)}
                               </div>
                             </div>
                           ) : (
@@ -358,7 +363,7 @@ export default function InvestCalculator() {
                 <CardHeader className="py-3 border-b-2 border-black dark:border-white">
                   <CardTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
                     <History className="h-5 w-5" />
-                    Accumulation History
+                    Invest History
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -370,7 +375,10 @@ export default function InvestCalculator() {
                             Date
                           </TableHead>
                           <TableHead className="font-bold uppercase text-xs text-right">
-                            Input
+                            Total Input
+                          </TableHead>
+                          <TableHead className="font-bold uppercase text-xs">
+                            Breakdown
                           </TableHead>
                           <TableHead className="font-bold uppercase text-xs">
                             Action
@@ -386,16 +394,36 @@ export default function InvestCalculator() {
                             key={tx.id}
                             className="border-b border-gray-100 dark:border-gray-800 last:border-0"
                           >
-                            <TableCell className="font-bold text-xs pl-4 py-3">
+                            <TableCell className="font-bold text-xs pl-4 py-3 align-top">
                               {tx.date}
                             </TableCell>
-                            <TableCell className="font-mono text-xs text-right py-3">
+                            <TableCell className="font-mono text-xs text-right py-3 align-top">
                               {Math.round(tx.monthlyAmount / 1000000)}M
                             </TableCell>
-                            <TableCell className="text-xs font-medium py-3 max-w-[200px] leading-tight">
+                            <TableCell className="text-xs py-2 align-top">
+                              <div className="space-y-1">
+                                {tx.allocations?.map((alloc, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex justify-between gap-2 text-[10px]"
+                                  >
+                                    <span className="text-gray-500 dark:text-gray-400">
+                                      {alloc.name}
+                                    </span>
+                                    <span className="font-mono">
+                                      {parseFloat(
+                                        (alloc.amount / 1000000).toFixed(1),
+                                      )}
+                                      M
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs font-medium py-3 max-w-[150px] leading-tight align-top">
                               {tx.action}
                             </TableCell>
-                            <TableCell className="font-bold text-xs text-right pr-4 py-3 text-green-600 dark:text-green-400">
+                            <TableCell className="font-bold text-xs text-right pr-4 py-3 text-green-600 dark:text-green-400 align-top">
                               {tx.goldBought > 0 ? `${tx.goldBought}` : "-"}
                             </TableCell>
                           </TableRow>

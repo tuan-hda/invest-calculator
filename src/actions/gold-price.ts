@@ -91,8 +91,8 @@ async function fetchGoldPrice() {
     // I'll also return the raw value and maybe a formatted label.
 
     return {
-      price: targetItem._Buy,
-      unit: "Nghìn VNĐ/Chỉ",
+      price: targetItem._Buy + ",000",
+      unit: "VNĐ/Chỉ",
       name: targetItem._Name,
       updatedAt: result.GoldList.LED.DateTime,
     };

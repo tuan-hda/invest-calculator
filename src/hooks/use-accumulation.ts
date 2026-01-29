@@ -3,6 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { getGoldPrice } from "@/actions/gold-price";
 
+export type CategoryAllocation = {
+  id: string;
+  name: string;
+  amount: number;
+  percentage: number;
+};
+
 export type Transaction = {
   id: string;
   date: string;
@@ -11,30 +18,29 @@ export type Transaction = {
   action: string;
   goldBought: number;
   goldCost: number;
-  goldOwesBondAfter: number;
-  bondOwesGoldAfter: number;
+  goldOwesStockAfter: number;
+  stockOwesGoldAfter: number;
   goldCashAfter: number;
-  bondCashAfter: number;
+  stockCashAfter: number;
+  allocations: CategoryAllocation[];
 };
 
 export type AccumulationState = {
-  goldOwesBond: number;
-  bondOwesGold: number;
+  goldOwesStock: number;
+  stockOwesGold: number;
   goldCash: number; // accumulated pending cash
-  bondCash: number; // accumulated pending cash
+  stockCash: number; // accumulated pending cash
   history: Transaction[];
 };
 
 const DEFAULT_STATE: AccumulationState = {
-  goldOwesBond: 0,
-  bondOwesGold: 0,
+  goldOwesStock: 0,
+  stockOwesGold: 0,
   goldCash: 0,
-  bondCash: 0,
+  stockCash: 0,
   history: [],
 };
 
-const GOLD_ALLOC_PERCENT = 0.2;
-const BOND_ALLOC_PERCENT = 0.2;
 const MIN_GOLD_UNIT = 0.5; // chi
 
 export function useAccumulation() {
@@ -47,7 +53,15 @@ export function useAccumulation() {
     const saved = localStorage.getItem("invest_calc_accumulation");
     if (saved) {
       try {
-        setState(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        // Ensure history items have allocations array if migrating from old version
+        if (parsed.history) {
+          parsed.history = parsed.history.map((tx: any) => ({
+            ...tx,
+            allocations: tx.allocations || [],
+          }));
+        }
+        setState(parsed);
       } catch (e) {
         console.error("Failed to parse saved state", e);
         setState(DEFAULT_STATE);
@@ -66,11 +80,14 @@ export function useAccumulation() {
 
   const parseGoldPrice = (priceStr: string): number => {
     const raw = parseFloat(priceStr.replace(/,/g, ""));
-    return raw * 1000; // "17,300" -> 17,300,000
+    return raw; // "17,300" -> 17,300,000
   };
 
   const calculateProposal = useCallback(
-    async (amount: number) => {
+    async (
+      amount: number,
+      categories: { id: string; name: string; percentage: number }[],
+    ) => {
       if (!amount || !state) return;
       setLoadingPrice(true);
       setProposal(null);
@@ -83,37 +100,65 @@ export function useAccumulation() {
         const pricePerMinUnit = pricePerChi * MIN_GOLD_UNIT;
 
         // Start with current state
-        let { goldCash, bondCash, goldOwesBond, bondOwesGold } = state;
+        let { goldCash, stockCash, goldOwesStock, stockOwesGold } = {
+          ...DEFAULT_STATE, // ensure new fields exist if loading old state
+          ...state,
+        };
 
-        // Add new allocation
-        const goldAlloc = amount * GOLD_ALLOC_PERCENT;
-        const bondAlloc = amount * BOND_ALLOC_PERCENT;
+        // Calculate allocations
+        const allocations: CategoryAllocation[] = categories.map((cat) => ({
+          id: cat.id,
+          name: cat.name,
+          percentage: cat.percentage,
+          amount: amount * (cat.percentage / 100),
+        }));
+
+        // Find specific allocations for logic
+        const goldAlloc = allocations.find((c) => c.id === "gold")?.amount || 0;
+        const stockAlloc =
+          allocations.find((c) => c.id === "stocks")?.amount || 0;
+
+        // Logic only updates if there is allocation for gold/bonds
+        // But we still record the transaction even if 0, to track history?
+        // Yes, track history for all input.
 
         goldCash += goldAlloc;
-        bondCash += bondAlloc;
+        stockCash += stockAlloc;
 
         let note = "";
         let goldBought = 0;
         let goldCost = 0;
 
-        // 1. Repayment Phase
-        if (goldOwesBond > 0) {
-          const maxRepay = goldCash * 0.2;
-          const repayAmount = Math.min(goldOwesBond, maxRepay);
-          goldCash -= repayAmount;
-          bondCash += repayAmount;
-          goldOwesBond -= repayAmount;
-          if (repayAmount > 0) {
-            note += `Trả nợ ${new Intl.NumberFormat("vi-VN").format(repayAmount)}đ. `;
+        // Helper to update allocation amounts
+        const adjustAllocation = (id: string, delta: number) => {
+          const alloc = allocations.find((a) => a.id === id);
+          if (alloc) {
+            alloc.amount += delta;
           }
-        } else if (bondOwesGold > 0) {
-          const maxRepay = bondCash * 0.2;
-          const repayAmount = Math.min(bondOwesGold, maxRepay);
-          bondCash -= repayAmount;
-          goldCash += repayAmount;
-          bondOwesGold -= repayAmount;
+        };
+
+        // 1. Repayment Phase (Prioritize Stock debt as it is the new mechanism)
+        if (goldOwesStock > 0) {
+          const maxRepay = goldCash;
+          const repayAmount = Math.min(goldOwesStock, maxRepay);
+          goldCash -= repayAmount;
+          stockCash += repayAmount;
+          goldOwesStock -= repayAmount;
           if (repayAmount > 0) {
-            note += `Nhận nợ ${new Intl.NumberFormat("vi-VN").format(repayAmount)}đ. `;
+            note += `Trả nợ Stock ${new Intl.NumberFormat("vi-VN").format(repayAmount)}đ. `;
+            adjustAllocation("gold", -repayAmount);
+            adjustAllocation("stocks", repayAmount);
+          }
+        } else if (stockOwesGold > 0) {
+          const maxRepay = stockCash;
+          const repayAmount = Math.min(stockOwesGold, maxRepay);
+          stockCash -= repayAmount;
+          goldCash += repayAmount;
+          stockOwesGold -= repayAmount;
+          if (repayAmount > 0) {
+            note += `Nhận nợ Stock ${new Intl.NumberFormat("vi-VN").format(repayAmount)}đ. `;
+            adjustAllocation("stocks", -repayAmount);
+            adjustAllocation("gold", repayAmount);
           }
         }
 
@@ -128,25 +173,34 @@ export function useAccumulation() {
           goldCost = cost;
           note += `Mua ${buyAmount} chỉ. `;
         } else {
+          // Check if we can borrow from STOCKS
+          // Rule: Can borrow if total (goldCash + stockCash) >= pricePerMinUnit
           const missing = pricePerMinUnit - goldCash;
-          const maxBorrow = bondCash * 0.2;
+          const maxBorrow = stockCash;
 
-          if (missing <= maxBorrow) {
-            bondCash -= missing;
+          if (missing > 0 && missing <= maxBorrow) {
+            stockCash -= missing;
             goldCash += missing;
-            goldOwesBond += missing;
-            note += `Vay ${new Intl.NumberFormat("vi-VN").format(missing)}đ. `;
+            goldOwesStock += missing;
+            note += `Vay Stock ${new Intl.NumberFormat("vi-VN").format(missing)}đ. `;
+            adjustAllocation("stocks", -missing);
+            adjustAllocation("gold", missing);
 
             goldBought = MIN_GOLD_UNIT;
             goldCost = pricePerMinUnit;
             goldCash -= goldCost;
             note += `Mua 0.5 chỉ. `;
           } else {
-            const transfer = goldCash * 0.2;
-            goldCash -= transfer;
-            bondCash += transfer;
-            bondOwesGold += transfer;
-            note += `Dồn ${new Intl.NumberFormat("vi-VN").format(transfer)}đ sang TP. `;
+            // "Dồn sang Stock" logic:
+            if (goldCash > 0) {
+              const transfer = goldCash;
+              goldCash -= transfer;
+              stockCash += transfer;
+              stockOwesGold += transfer;
+              note += `Dồn ${new Intl.NumberFormat("vi-VN").format(transfer)}đ sang Stock. `;
+              adjustAllocation("gold", -transfer);
+              adjustAllocation("stocks", transfer);
+            }
           }
         }
 
@@ -158,10 +212,11 @@ export function useAccumulation() {
           action: note,
           goldBought,
           goldCost,
-          goldOwesBondAfter: goldOwesBond,
-          bondOwesGoldAfter: bondOwesGold,
+          goldOwesStockAfter: goldOwesStock,
+          stockOwesGoldAfter: stockOwesGold,
           goldCashAfter: goldCash,
-          bondCashAfter: bondCash,
+          stockCashAfter: stockCash,
+          allocations, // This now contains the adjusted values
         };
 
         setProposal(proposalTrans);
@@ -177,10 +232,10 @@ export function useAccumulation() {
   const confirmTransaction = useCallback(() => {
     if (!proposal || !state) return;
     setState({
-      goldOwesBond: proposal.goldOwesBondAfter,
-      bondOwesGold: proposal.bondOwesGoldAfter,
+      goldOwesStock: proposal.goldOwesStockAfter,
+      stockOwesGold: proposal.stockOwesGoldAfter,
       goldCash: proposal.goldCashAfter,
-      bondCash: proposal.bondCashAfter,
+      stockCash: proposal.stockCashAfter,
       history: [proposal, ...state.history],
     });
     setProposal(null);

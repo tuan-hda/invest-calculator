@@ -55,21 +55,27 @@ export function WalletStatus({ state, onReset }: WalletStatusProps) {
               {formatCurrency(state.goldCash)}
             </div>
           </div>
-          <div className="p-2 border border-dashed border-black dark:border-white rounded bg-blue-50 dark:bg-blue-900/10">
-            <div className="text-[10px] font-black uppercase text-blue-700 dark:text-blue-400">
-              Bond Fund
+          <div className="p-2 border border-dashed border-black dark:border-white rounded bg-green-50 dark:bg-green-900/10">
+            <div className="text-[10px] font-black uppercase text-green-700 dark:text-green-400">
+              Stock Fund
             </div>
             <div className="font-mono font-bold text-sm">
-              {formatCurrency(state.bondCash)}
+              {formatCurrency(state.stockCash)}
             </div>
           </div>
         </div>
-        {(state.goldOwesBond > 0 || state.bondOwesGold > 0) && (
-          <div className="pt-2 border-t border-gray-200 dark:border-gray-700 text-xs font-bold text-red-500">
-            {state.goldOwesBond > 0 &&
-              `Gold owes Bond: ${formatCurrency(state.goldOwesBond)}`}
-            {state.bondOwesGold > 0 &&
-              `Bond owes Gold: ${formatCurrency(state.bondOwesGold)}`}
+        {(state.goldOwesStock > 0 || state.stockOwesGold > 0) && (
+          <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-1">
+            {state.goldOwesStock > 0 && (
+              <div className="text-xs font-bold text-red-500">
+                Gold owes Stock: {formatCurrency(state.goldOwesStock)}
+              </div>
+            )}
+            {state.stockOwesGold > 0 && (
+              <div className="text-xs font-bold text-red-500">
+                Stock owes Gold: {formatCurrency(state.stockOwesGold)}
+              </div>
+            )}
           </div>
         )}
       </CardContent>
