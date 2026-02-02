@@ -123,8 +123,8 @@ export function AppSidebar() {
   ];
 
   return (
-    <div className="fixed top-[calc(100%-7rem)] w-full flex justify-center z-50 md:top-0 md:h-screen md:w-auto md:flex md:items-center md:justify-center">
-      <div className="flex flex-row md:flex-col gap-6 w-[14rem] md:gap-8 bg-background/80 backdrop-blur-md p-4 md:p-6 rounded-3xl md:rounded-3xl border-2 md:border-2 border-black dark:border-white shadow-[0px_4px_0px_0px_rgba(0,0,0,1)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:ml-8">
+    <div className="fixed md:sticky top-[calc(100%-7rem)] w-full flex justify-center z-50 md:top-0 md:h-screen md:w-auto md:flex md:items-center md:justify-center">
+      <div className="flex flex-row md:flex-col gap-6 w-auto md:gap-8 bg-background/80 backdrop-blur-md p-4 md:p-6 rounded-3xl md:rounded-3xl border-2 md:border-2 border-black dark:border-white shadow-[0px_4px_0px_0px_rgba(0,0,0,1)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:ml-8">
         {items.map((item) => (
           <SidebarItem
             key={item.title}
