@@ -68,7 +68,7 @@ async function fetchGoldPrice(): Promise<GoldPriceResult> {
     };
   } catch (error) {
     console.error("Error fetching gold price:", error);
-    return { success: false, error: "Failed to fetch gold price" };
+    return { success: false, error: `Failed to fetch gold price: ${error}` };
   }
 }
 
