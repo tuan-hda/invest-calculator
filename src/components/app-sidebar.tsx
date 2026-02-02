@@ -62,7 +62,7 @@ function SidebarItem({ item, isActive }: SidebarItemProps) {
         className={cn(
           "group relative flex items-center justify-center p-4 md:p-5 rounded-xl md:rounded-2xl border-2 md:border-4 border-black dark:border-white transition-colors duration-200",
           isActive
-            ? "bg-primary text-primary-foreground dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] md:dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] translate-x-1 translate-y-1 shadow-none"
+            ? "bg-primary text-primary-foreground md:dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] translate-x-1 translate-y-1 shadow-none"
             : "bg-background text-foreground hover:bg-muted shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] md:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] md:dark:hover:shadow-[10px_10px_0px_0px_rgba(255,255,255,1)]",
         )}
         style={{
