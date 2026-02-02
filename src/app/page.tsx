@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import {
   Card,
   CardContent,
@@ -28,15 +28,35 @@ import { GoldPriceCard } from "@/components/gold-price-card";
 import { useAccumulation } from "@/hooks/use-accumulation";
 import { WalletStatus } from "@/components/wallet-status";
 
+type SubCategory = {
+  id: string;
+  name: string;
+  share: number;
+};
+
 type Category = {
   id: string;
   name: string;
   percentage: number;
+  subCategories?: SubCategory[];
 };
 
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: "stocks", name: "Quỹ cổ phiếu", percentage: 20 },
-  { id: "bonds", name: "Quỹ trái phiếu", percentage: 20 },
+  {
+    id: "stocks",
+    name: "Quỹ cổ phiếu",
+    percentage: 25,
+    subCategories: [
+      { id: "vesaf", name: "VESAF", share: 0.5 },
+      { id: "ssisca", name: "SSISCA", share: 0.5 },
+    ],
+  },
+  {
+    id: "bonds",
+    name: "Quỹ trái phiếu",
+    percentage: 15,
+    subCategories: [{ id: "vcbf-fif", name: "VCBF-FIF", share: 1 }],
+  },
   { id: "gold", name: "Vàng", percentage: 35 },
   { id: "savings", name: "Tiết kiệm", percentage: 20 },
   { id: "bitcoin", name: "Bitcoin", percentage: 5 },
@@ -282,20 +302,43 @@ export default function InvestCalculator() {
                                 (category.percentage / 100);
                             }
                             return (
-                              <TableRow
-                                key={category.id}
-                                className="border-b-2 border-black dark:border-white hover:bg-yellow-100 dark:hover:bg-slate-800 transition-colors"
-                              >
-                                <TableCell className="font-bold text-black dark:text-white border-r-2 border-black dark:border-white">
-                                  {category.name}
-                                </TableCell>
-                                <TableCell className="text-right font-mono font-bold text-black dark:text-white border-r-2 border-black dark:border-white">
-                                  {category.percentage}%
-                                </TableCell>
-                                <TableCell className="text-right font-mono font-bold text-black dark:text-white">
-                                  {formatCurrency(marketValue)}
-                                </TableCell>
-                              </TableRow>
+                              <Fragment key={category.id}>
+                                <TableRow
+                                  key={category.id}
+                                  className="border-b-2 border-black dark:border-white hover:bg-yellow-100 dark:hover:bg-slate-800 transition-colors"
+                                >
+                                  <TableCell className="font-bold text-black dark:text-white border-r-2 border-black dark:border-white">
+                                    {category.name}
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono font-bold text-black dark:text-white border-r-2 border-black dark:border-white">
+                                    {category.percentage}%
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono font-bold text-black dark:text-white">
+                                    {formatCurrency(marketValue)}
+                                  </TableCell>
+                                </TableRow>
+                                {category.subCategories?.map((sub) => {
+                                  const subValue = marketValue * sub.share;
+                                  const subPercentage =
+                                    category.percentage * sub.share;
+                                  return (
+                                    <TableRow
+                                      key={sub.id}
+                                      className="border-b-2 border-black dark:border-white hover:bg-yellow-50 dark:hover:bg-slate-900/50 transition-colors bg-gray-50/50 dark:bg-slate-900/30"
+                                    >
+                                      <TableCell className="pl-8 font-bold text-black/60 dark:text-white/60 italic border-r-2 border-black dark:border-white">
+                                        - {sub.name}
+                                      </TableCell>
+                                      <TableCell className="text-right font-mono font-bold text-black/60 dark:text-white/60 border-r-2 border-black dark:border-white">
+                                        {subPercentage}%
+                                      </TableCell>
+                                      <TableCell className="text-right font-mono font-bold text-black/60 dark:text-white/60">
+                                        {formatCurrency(subValue)}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </Fragment>
                             );
                           })}
                           <TableRow className="bg-violet-200 dark:bg-violet-900 font-black border-t-2 border-black dark:border-white hover:bg-violet-300 dark:hover:bg-violet-800">
