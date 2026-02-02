@@ -53,16 +53,17 @@ function SidebarItem({ item, isActive }: SidebarItemProps) {
       initial={{ x: -100, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 100, damping: 20 }}
+      className="md:w-auto w-full"
     >
       <Link
         href={item.url}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          "group relative flex items-center justify-center p-5 rounded-2xl border-4 border-black dark:border-white transition-colors duration-200",
+          "group relative flex items-center justify-center p-4 md:p-5 rounded-xl md:rounded-2xl border-2 md:border-4 border-black dark:border-white transition-colors duration-200",
           isActive
-            ? "bg-primary text-primary-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] translate-x-1 translate-y-1 shadow-none"
-            : "bg-background text-foreground hover:bg-muted shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[10px_10px_0px_0px_rgba(255,255,255,1)] hover:-translate-x-1 hover:-translate-y-1",
+            ? "bg-primary text-primary-foreground dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] md:dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] translate-x-1 translate-y-1 shadow-none"
+            : "bg-background text-foreground hover:bg-muted shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] md:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] md:dark:hover:shadow-[10px_10px_0px_0px_rgba(255,255,255,1)]",
         )}
         style={{
           perspective: "1000px",
@@ -77,15 +78,15 @@ function SidebarItem({ item, isActive }: SidebarItemProps) {
           }}
           className="relative z-10"
         >
-          <item.icon className="w-10 h-10" />
+          <item.icon className="w-8 h-8 md:w-10 md:h-10" />
         </motion.div>
 
-        {/* Tooltip Label */}
+        {/* Tooltip Label - Hidden on mobile */}
         <AnimatePresence>
           <motion.span
             initial={{ opacity: 0, x: 20 }}
             whileHover={{ opacity: 1, x: 40 }}
-            className="absolute left-full ml-4 px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black text-sm font-black rounded-lg border-2 border-black dark:border-white pointer-events-none whitespace-nowrap shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)] uppercase tracking-tighter"
+            className="hidden md:block absolute left-full ml-4 px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black text-sm font-black rounded-lg border-2 border-black dark:border-white pointer-events-none whitespace-nowrap shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)] uppercase tracking-tighter"
           >
             {item.title}
           </motion.span>
@@ -95,7 +96,7 @@ function SidebarItem({ item, isActive }: SidebarItemProps) {
         {isActive && (
           <motion.div
             layoutId="active-pill"
-            className="absolute inset-0 bg-primary/20 -z-10 rounded-xl"
+            className="absolute inset-0 bg-primary/20 -z-10 rounded-lg md:rounded-xl"
             initial={false}
             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           />
@@ -122,14 +123,16 @@ export function AppSidebar() {
   ];
 
   return (
-    <div className="fixed left-8 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-8">
-      {items.map((item) => (
-        <SidebarItem
-          key={item.title}
-          item={item}
-          isActive={pathname === item.url}
-        />
-      ))}
+    <div className="fixed top-[calc(100%-7rem)] w-full flex justify-center z-50 md:top-0 md:h-screen md:w-auto md:flex md:items-center md:justify-center">
+      <div className="flex flex-row md:flex-col gap-6 w-[14rem] md:gap-8 bg-background/80 backdrop-blur-md p-4 md:p-6 rounded-3xl md:rounded-3xl border-2 md:border-2 border-black dark:border-white shadow-[0px_4px_0px_0px_rgba(0,0,0,1)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:ml-8">
+        {items.map((item) => (
+          <SidebarItem
+            key={item.title}
+            item={item}
+            isActive={pathname === item.url}
+          />
+        ))}
+      </div>
     </div>
   );
 }

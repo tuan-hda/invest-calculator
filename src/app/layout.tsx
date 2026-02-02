@@ -35,9 +35,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex min-h-screen w-full">
+          <div className="flex flex-col pb-[7rem] md:pb-0 md:flex-row min-h-screen w-full">
             <AppSidebar />
-            <main className="flex-1 w-full pl-24 pr-4 py-8">{children}</main>
+            <main className="flex-1 w-full px-4 md:px-8 py-8">{children}</main>
           </div>
         </ThemeProvider>
       </body>
