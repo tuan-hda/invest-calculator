@@ -56,6 +56,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
         const parsed = JSON.parse(saved);
         // Ensure history items have allocations array if migrating from old version
         if (parsed.history) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           parsed.history = parsed.history.map((tx: any) => ({
             ...tx,
             allocations: tx.allocations || [],
@@ -93,8 +94,9 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
       setProposal(null);
 
       try {
-        const goldData = await getGoldPrice();
-        if (!goldData) throw new Error("Could not fetch gold price");
+        const result = await getGoldPrice();
+        if (!result.success) throw new Error(result.error);
+        const goldData = result.data;
 
         const pricePerChi = parseGoldPrice(goldData.price);
         const pricePerMinUnit = pricePerChi * MIN_GOLD_UNIT;
@@ -260,7 +262,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     });
     setProposal(null);
     onConfirm?.();
-  }, [proposal, state]);
+  }, [proposal, state, onConfirm]);
 
   const resetState = useCallback(() => {
     if (confirm("Are you sure you want to clear all history?")) {

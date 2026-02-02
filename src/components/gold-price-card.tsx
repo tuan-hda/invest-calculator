@@ -23,21 +23,21 @@ type GoldData = {
 export function GoldPriceCard() {
   const [data, setData] = useState<GoldData>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
-    setError(false);
+    setError(null);
     try {
       const result = await getGoldPrice();
-      if (result) {
-        setData(result);
+      if (result.success) {
+        setData(result.data);
       } else {
-        setError(true);
+        setError(result.error);
       }
     } catch (err) {
       console.error(err);
-      setError(true);
+      setError("An unexpected error occurred");
     } finally {
       setLoading(false);
     }
@@ -77,9 +77,7 @@ export function GoldPriceCard() {
             <Loader2 className="h-8 w-8 animate-spin text-black dark:text-white" />
           </div>
         ) : error ? (
-          <div className="text-center py-4 text-red-500 font-bold">
-            Failed to load price
-          </div>
+          <div className="text-center py-4 text-red-500 font-bold">{error}</div>
         ) : data ? (
           <div className="space-y-4">
             <div>
