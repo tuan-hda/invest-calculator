@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGoldPrice } from "@/actions/gold-price";
+import { getGoldPrice, revalidateGoldPrice } from "@/actions/gold-price";
 import {
   Card,
   CardContent,
@@ -25,10 +25,13 @@ export function GoldPriceCard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = async (forceRefresh = false) => {
     setLoading(true);
     setError(null);
     try {
+      if (forceRefresh) {
+        await revalidateGoldPrice();
+      }
       const result = await getGoldPrice();
       if (result.success) {
         setData(result.data);
@@ -60,7 +63,7 @@ export function GoldPriceCard() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={fetchData}
+            onClick={() => fetchData(true)}
             disabled={loading}
             className="h-8 w-8 hover:bg-black/10 dark:hover:bg-white/20 rounded-full"
           >

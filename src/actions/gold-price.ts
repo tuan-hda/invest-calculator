@@ -1,6 +1,6 @@
 "use server";
 
-import { unstable_cache } from "next/cache";
+import { unstable_cache, revalidateTag } from "next/cache";
 import { load } from "cheerio";
 
 type GoldData = {
@@ -68,7 +68,10 @@ async function fetchGoldPrice(): Promise<GoldPriceResult> {
     };
   } catch (error) {
     console.error("Error fetching gold price:", error);
-    return { success: false, error: `Failed to fetch gold price: ${error}` };
+    return {
+      success: false,
+      error: `Failed to fetch gold price: ${(error as Error)?.message || error}`,
+    };
   }
 }
 
@@ -77,3 +80,7 @@ export const getGoldPrice = unstable_cache(
   ["gold-price-doji"],
   { revalidate: 3600 },
 );
+
+export async function revalidateGoldPrice() {
+  revalidateTag("gold-price-doji", "max");
+}
