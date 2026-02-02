@@ -35,9 +35,9 @@ type Category = {
 };
 
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: "stocks", name: "Quỹ cổ phiếu", percentage: 30 },
-  { id: "bonds", name: "Quỹ trái phiếu", percentage: 15 },
-  { id: "gold", name: "Vàng", percentage: 30 },
+  { id: "stocks", name: "Quỹ cổ phiếu", percentage: 20 },
+  { id: "bonds", name: "Quỹ trái phiếu", percentage: 20 },
+  { id: "gold", name: "Vàng", percentage: 35 },
   { id: "savings", name: "Tiết kiệm", percentage: 20 },
   { id: "bitcoin", name: "Bitcoin", percentage: 5 },
 ];
