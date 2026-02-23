@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { getGoldPrice } from "@/actions/gold-price";
+import { fetchGoldPrice } from "@/lib/gold-price-client";
 
 export type CategoryAllocation = {
   id: string;
@@ -94,7 +94,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
       setProposal(null);
 
       try {
-        const result = await getGoldPrice();
+        const result = await fetchGoldPrice();
         if (!result.success) throw new Error(result.error);
         const goldData = result.data;
 
