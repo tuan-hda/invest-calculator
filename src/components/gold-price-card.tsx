@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGoldPrice, revalidateGoldPrice } from "@/actions/gold-price";
+import { fetchGoldPrice } from "@/lib/gold-price-client";
 import {
   Card,
   CardContent,
@@ -29,10 +29,7 @@ export function GoldPriceCard() {
     setLoading(true);
     setError(null);
     try {
-      if (forceRefresh) {
-        await revalidateGoldPrice();
-      }
-      const result = await getGoldPrice();
+      const result = await fetchGoldPrice(forceRefresh);
       if (result.success) {
         setData(result.data);
       } else {
