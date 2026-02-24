@@ -30,6 +30,11 @@ export function Calendar() {
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentMonth(today);
+    setSelectedDate(today);
+  };
 
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -55,23 +60,32 @@ export function Calendar() {
             {format(currentMonth, "MMMM yyyy")}
           </h2>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            size="icon"
-            onClick={prevMonth}
-            className="hover:bg-yellow-400 dark:hover:bg-yellow-500 text-black dark:text-white"
+            onClick={goToToday}
+            className="flex px-4 bg-white dark:bg-slate-900 text-black uppercase italic font-bold hover:bg-yellow-400 dark:hover:bg-yellow-500 dark:text-white"
           >
-            <ChevronLeft className="w-6 h-6" />
+            Today
           </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={nextMonth}
-            className="hover:bg-yellow-400 dark:hover:bg-yellow-500 text-black dark:text-white"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={prevMonth}
+              className="hover:bg-yellow-400 dark:hover:bg-yellow-500 text-black dark:text-white border-2 border-black dark:border-white rounded-none"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={nextMonth}
+              className="hover:bg-yellow-400 dark:hover:bg-yellow-500 text-black dark:text-white border-2 border-black dark:border-white rounded-none"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </Button>
+          </div>
         </div>
       </div>
 
