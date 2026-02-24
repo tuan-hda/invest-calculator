@@ -118,7 +118,7 @@ export function Calendar() {
                   key={day.toString()}
                   onClick={() => setSelectedDate(day)}
                   className={cn(
-                    "relative aspect-square flex items-center justify-center border-r-2 border-b-2 last:border-r-0 border-black/10 dark:border-white/10 cursor-pointer transition-all group",
+                    "relative md:h-auto h-16 md:aspect-square flex items-center justify-center border-r-2 border-b-2 last:border-r-0 border-black/10 dark:border-white/10 cursor-pointer transition-all group",
                     !isCurrentMonth &&
                       "bg-slate-50/50 dark:bg-slate-800/30 text-slate-300 dark:text-slate-600",
                     isCurrentMonth && "text-black dark:text-white font-black",

@@ -8,7 +8,7 @@ export interface LunarEvent {
 export const LUNAR_EVENTS: LunarEvent[] = [
   { day: 1, month: 1, name: "Tết Nguyên Đán", isHoliday: true },
   { day: 10, month: 3, name: "Giỗ Tổ Hùng Vương", isHoliday: true },
-  { day: 5, month: 3, name: "Kỵ bố" },
+  { day: 4, month: 3, name: "Kỵ bố" },
   { day: 7, month: 4, name: "Kỵ bác Hùng" },
   { day: 9, month: 7, name: "Chạp mộ" },
   { day: 10, month: 7, name: "Chạp mộ" },

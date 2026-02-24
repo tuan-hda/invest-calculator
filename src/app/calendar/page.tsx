@@ -40,7 +40,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="min-h-screen bg-yellow-300 dark:bg-slate-950 py-10 px-4 sm:px-6 lg:px-8 font-sans selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-300">
+    <div className="min-h-screen bg-yellow-300 dark:bg-slate-950 py-10 sm:mx-4 sm:px-6 lg:px-8 font-sans selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-300">
       <div className="fixed top-4 right-4 z-50">
         <ModeToggle />
       </div>
