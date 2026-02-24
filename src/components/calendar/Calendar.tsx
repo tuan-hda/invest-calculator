@@ -22,6 +22,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { getLunarDate } from "@dqcai/vn-lunar";
+import { LUNAR_EVENTS } from "@/config/lunar-events";
 
 export function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -102,6 +103,16 @@ export function Calendar() {
               const isSelected = isSameDay(day, selectedDate);
               const isCurrentMonth = isSameMonth(day, monthStart);
 
+              const lunar = getLunarDate(
+                day.getDate(),
+                day.getMonth() + 1,
+                day.getFullYear(),
+              );
+
+              const event = LUNAR_EVENTS.find(
+                (e) => e.day === lunar.day && e.month === lunar.month,
+              );
+
               return (
                 <div
                   key={day.toString()}
@@ -111,6 +122,9 @@ export function Calendar() {
                     !isCurrentMonth &&
                       "bg-slate-50/50 dark:bg-slate-800/30 text-slate-300 dark:text-slate-600",
                     isCurrentMonth && "text-black dark:text-white font-black",
+                    event &&
+                      isCurrentMonth &&
+                      "ring-2 ring-inset ring-red-500/20 bg-red-50/10",
                   )}
                 >
                   {/* Selection Background */}
@@ -133,10 +147,33 @@ export function Calendar() {
                     className={cn(
                       "relative z-10 text-lg",
                       isSelected && "text-black",
+                      event &&
+                        isCurrentMonth &&
+                        !isSelected &&
+                        "text-red-600 dark:text-red-400",
                     )}
                   >
                     {formattedDate}
                   </span>
+
+                  {/* Event Marker */}
+                  {event && isCurrentMonth && (
+                    <div
+                      className={cn(
+                        "absolute top-2 right-2 w-2 h-2 rounded-full z-20",
+                        event.isHoliday ? "bg-red-500" : "bg-blue-400",
+                      )}
+                    />
+                  )}
+
+                  {/* Event Name Tooltip-like (Visible on hover or if selected) */}
+                  {event && isCurrentMonth && (
+                    <div className="absolute top-0 left-0 right-0 py-0.5 px-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      <span className="text-[7px] leading-tight block truncate bg-black text-white px-1 font-bold">
+                        {event.name}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Lunar Date Display */}
                   <span
@@ -147,16 +184,9 @@ export function Calendar() {
                         : "text-slate-400 dark:text-slate-500",
                     )}
                   >
-                    {(() => {
-                      const lunar = getLunarDate(
-                        day.getDate(),
-                        day.getMonth() + 1,
-                        day.getFullYear(),
-                      );
-                      return lunar.day === 1
-                        ? `${lunar.day}/${lunar.month}`
-                        : lunar.day;
-                    })()}
+                    {lunar.day === 1
+                      ? `${lunar.day}/${lunar.month}`
+                      : lunar.day}
                   </span>
                 </div>
               );
@@ -175,7 +205,7 @@ export function Calendar() {
         </div>
         <div className="flex items-center gap-2 mt-1">
           <div className="w-3 h-3 bg-slate-400 dark:bg-slate-500 border-2 border-black dark:border-white" />
-          <p className="text-xs font-bold uppercase tracking-tight text-black dark:text-yellow-100">
+          <p className="text-xs font-bold uppercase tracking-tight text-black dark:text-yellow-100 flex items-center gap-2">
             Lunar:{" "}
             {(() => {
               const lunar = getLunarDate(
@@ -183,7 +213,19 @@ export function Calendar() {
                 selectedDate.getMonth() + 1,
                 selectedDate.getFullYear(),
               );
-              return `${lunar.day}/${lunar.month}/${lunar.year}${lunar.leap ? " (Leap)" : ""}`;
+              const event = LUNAR_EVENTS.find(
+                (e) => e.day === lunar.day && e.month === lunar.month,
+              );
+              return (
+                <>
+                  {`${lunar.day}/${lunar.month}/${lunar.year}${lunar.leap ? " (Leap)" : ""}`}
+                  {event && (
+                    <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-[10px] animate-pulse">
+                      {event.name}
+                    </span>
+                  )}
+                </>
+              );
             })()}
           </p>
         </div>
