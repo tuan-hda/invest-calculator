@@ -106,6 +106,8 @@ function SidebarItem({ item, isActive }: SidebarItemProps) {
   );
 }
 
+import { UserButton, SignedIn } from "@clerk/nextjs";
+
 export function AppSidebar() {
   const pathname = usePathname();
 
@@ -132,6 +134,18 @@ export function AppSidebar() {
             isActive={pathname === item.url}
           />
         ))}
+        <div className="flex items-center justify-center pt-2 md:pt-4 border-t-2 border-black/10 dark:border-white/10 mt-2 md:mt-4">
+          <SignedIn>
+            <UserButton
+              appearance={{
+                elements: {
+                  userButtonAvatarBox:
+                    "!w-10 !h-10 md:!w-10 md:!h-10 border-2 border-black",
+                },
+              }}
+            />
+          </SignedIn>
+        </div>
       </div>
     </div>
   );
