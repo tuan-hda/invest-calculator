@@ -14,23 +14,26 @@ export default function CalendarPage() {
     setIsExporting(true);
     try {
       const response = await fetch("/api/calendar/export", {
-        method: "POST",
+        method: "GET",
       });
-      const data = await response.json();
-      if (data.success) {
-        // Trigger download
-        const link = document.createElement("a");
-        link.href = data.url;
-        link.download = "lunar-events.ics";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        alert("Failed to export ICS: " + data.error);
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to export ICS");
       }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "lunar-events.ics";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Export error:", error);
-      alert("Failed to export ICS");
+      alert(error instanceof Error ? error.message : "Failed to export ICS");
     } finally {
       setIsExporting(false);
     }
