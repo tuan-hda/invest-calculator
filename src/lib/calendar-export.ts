@@ -9,8 +9,8 @@ function formatICSDate(date: Date): string {
 }
 
 export function generateICSContent(
-  startYear: number = 2026,
-  endYear: number = 2026,
+  startYear: number = new Date().getFullYear(),
+  endYear: number = new Date().getFullYear(),
 ): string {
   const icsLines = [
     "BEGIN:VCALENDAR",
