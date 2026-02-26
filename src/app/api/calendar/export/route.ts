@@ -2,7 +2,8 @@ import { generateICSContent } from "@/lib/calendar-export";
 
 export async function GET() {
   try {
-    const content = generateICSContent();
+    const currentYear = new Date().getFullYear();
+    const content = generateICSContent(currentYear, currentYear);
 
     // Stream the content
     const encoder = new TextEncoder();
