@@ -9,8 +9,8 @@ function formatICSDate(date: Date): string {
 }
 
 export function generateICSContent(
-  startYear: number = 2025,
-  endYear: number = 2030,
+  startYear: number = 2026,
+  endYear: number = 2026,
 ): string {
   const icsLines = [
     "BEGIN:VCALENDAR",
@@ -42,6 +42,11 @@ export function generateICSContent(
       icsLines.push(`DTEND;VALUE=DATE:${formatICSDate(endDate)}`);
       icsLines.push(`DESCRIPTION:Lunar Date: ${event.day}/${event.month}`);
       icsLines.push("TRANSP:TRANSPARENT");
+      icsLines.push("BEGIN:VALARM");
+      icsLines.push("ACTION:DISPLAY");
+      icsLines.push("DESCRIPTION:Reminder");
+      icsLines.push("TRIGGER:PT9H");
+      icsLines.push("END:VALARM");
       icsLines.push("END:VEVENT");
     }
   }
