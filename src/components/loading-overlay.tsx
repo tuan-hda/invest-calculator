@@ -1,5 +1,3 @@
-"use client";
-
 export function LoadingOverlay() {
   return (
     <div className="min-h-screen bg-yellow-300 dark:bg-slate-950 flex items-center justify-center font-sans tracking-tight">
