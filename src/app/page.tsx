@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import { ModeToggle } from "@/components/mode-toggle";
 import { GoldPriceCard } from "@/components/gold-price-card";
 import { useAccumulation } from "@/hooks/use-accumulation";
@@ -23,6 +24,7 @@ import {
 import { AlertCircle } from "lucide-react";
 
 export default function InvestCalculator() {
+  const { isLoaded: isUserLoaded, isSignedIn } = useUser();
   const [amount, setAmount] = useState<number | "">("");
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
 
@@ -34,6 +36,7 @@ export default function InvestCalculator() {
     calculateProposal,
     confirmTransaction,
     resetState,
+    updateBorrowing,
     clearProposal,
   } = useAccumulation({
     onConfirm: () => {
@@ -77,6 +80,14 @@ export default function InvestCalculator() {
     setCategories(DEFAULT_CATEGORIES);
   };
 
+  if (!isUserLoaded) {
+    return <LoadingOverlay />;
+  }
+
+  if (!isSignedIn) {
+    return null;
+  }
+
   if (loadingState) {
     return <LoadingOverlay />;
   }
@@ -109,7 +120,11 @@ export default function InvestCalculator() {
               onPercentageChange={handlePercentageChange}
               onReset={resetDefaults}
             />
-            <WalletStatus state={accumulationState} onReset={resetState} />
+            <WalletStatus
+              state={accumulationState}
+              onReset={resetState}
+              onUpdateBorrowing={updateBorrowing}
+            />
             <GoldPriceCard />
           </div>
 

@@ -13,7 +13,7 @@ import {
 } from "@/lib/accumulation-logic";
 
 export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user } = useUser();
   const { getSupabase } = useSupabase();
   const [state, setState] = useState<AccumulationState | null>(null);
   const [proposal, setProposal] = useState<Transaction | null>(null);
@@ -23,21 +23,13 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
   // Load state from Supabase on mount/user change
   useEffect(() => {
     async function loadState() {
-      if (!isUserLoaded || !user) {
-        if (isUserLoaded && !user) {
-          setState(DEFAULT_STATE);
-          setLoading(false);
-        }
-        return;
-      }
-
       setLoading(true);
       try {
         const supabase = await getSupabase();
         const { data, error } = await supabase
           .from("investments")
           .select("state")
-          .eq("user_id", user.id)
+          .eq("user_id", user?.id)
           .single();
 
         if (error) {
@@ -68,7 +60,8 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     }
 
     loadState();
-  }, [user, isUserLoaded, getSupabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Helper to persist state to Supabase
   const persistState = useCallback(
@@ -154,6 +147,22 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     }
   }, [user, persistState]);
 
+  const updateBorrowing = useCallback(
+    async (goldOwesStock: number, stockOwesGold: number) => {
+      if (!state || !user) return;
+
+      const newState = {
+        ...state,
+        goldOwesStock,
+        stockOwesGold,
+      };
+
+      setState(newState);
+      await persistState(newState);
+    },
+    [state, user, persistState],
+  );
+
   return {
     state,
     proposal,
@@ -162,6 +171,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     calculateProposal,
     confirmTransaction,
     resetState,
+    updateBorrowing,
     clearProposal: () => setProposal(null),
   };
 }
