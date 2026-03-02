@@ -11,6 +11,7 @@ import { InvestmentSettings } from "@/components/investment/InvestmentSettings";
 import { InvestmentBreakdown } from "@/components/investment/InvestmentBreakdown";
 import { AccumulationPlan } from "@/components/investment/AccumulationPlan";
 import { InvestmentHistory } from "@/components/investment/InvestmentHistory";
+import { LoadingOverlay } from "@/components/loading-overlay";
 import {
   Card,
   CardContent,
@@ -28,6 +29,7 @@ export default function InvestCalculator() {
   const {
     state: accumulationState,
     proposal,
+    loadingState,
     loadingPrice,
     calculateProposal,
     confirmTransaction,
@@ -49,7 +51,7 @@ export default function InvestCalculator() {
       }
     }, 800);
     return () => clearTimeout(timer);
-  }, [amount, categories, calculateProposal]);
+  }, [amount, categories, calculateProposal, clearProposal]);
 
   const totalPercentage = useMemo(() => {
     return categories.reduce((sum, cat) => sum + cat.percentage, 0);
@@ -74,6 +76,10 @@ export default function InvestCalculator() {
   const resetDefaults = () => {
     setCategories(DEFAULT_CATEGORIES);
   };
+
+  if (loadingState) {
+    return <LoadingOverlay />;
+  }
 
   return (
     <div className="min-h-screen bg-yellow-300 dark:bg-slate-950 py-10 px-4 sm:px-6 lg:px-8 font-sans selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-300">
