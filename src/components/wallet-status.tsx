@@ -1,9 +1,9 @@
 "use client";
 
-import { AccumulationState } from "@/hooks/use-accumulation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PiggyBank, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AccumulationState } from "@/lib/accumulation-logic";
 
 type WalletStatusProps = {
   state: AccumulationState | null;
