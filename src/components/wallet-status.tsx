@@ -5,13 +5,29 @@ import { PiggyBank, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccumulationState } from "@/lib/accumulation-logic";
 
+import { useState, useEffect } from "react";
+
 type WalletStatusProps = {
   state: AccumulationState | null;
   onReset: () => void;
+  onUpdateBorrowing: (goldOwesStock: number, stockOwesGold: number) => void;
 };
 
-export function WalletStatus({ state, onReset }: WalletStatusProps) {
+export function WalletStatus({
+  state,
+  onReset,
+  onUpdateBorrowing,
+}: WalletStatusProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editGoldOwes, setEditGoldOwes] = useState(0);
+  const [editStockOwes, setEditStockOwes] = useState(0);
+
   if (!state) return null;
+
+  const handleSave = () => {
+    onUpdateBorrowing(editGoldOwes, editStockOwes);
+    setIsEditing(false);
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -43,10 +59,67 @@ export function WalletStatus({ state, onReset }: WalletStatusProps) {
         </div>
       </CardHeader>
       <CardContent className="p-4 space-y-3">
-        <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-          Inter-Fund Borrowing
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            Inter-Fund Borrowing
+          </div>
+          {!isEditing && (
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => {
+                setEditGoldOwes(state.goldOwesStock);
+                setEditStockOwes(state.stockOwesGold);
+                setIsEditing(true);
+              }}
+              className="h-auto p-0 text-blue-600 dark:text-blue-400 font-bold text-xs uppercase"
+            >
+              Edit
+            </Button>
+          )}
         </div>
-        {state.goldOwesStock === 0 && state.stockOwesGold === 0 ? (
+
+        {isEditing ? (
+          <div className="space-y-4 p-3 border-2 border-dashed border-black dark:border-white rounded bg-gray-50 dark:bg-gray-900/10">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-gray-500">
+                Gold owes Stock (VND)
+              </label>
+              <input
+                type="number"
+                value={editGoldOwes}
+                onChange={(e) => setEditGoldOwes(Number(e.target.value))}
+                className="w-full p-2 border-2 border-black dark:border-white bg-white dark:bg-slate-800 font-mono font-bold text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-gray-500">
+                Stock owes Gold (VND)
+              </label>
+              <input
+                type="number"
+                value={editStockOwes}
+                onChange={(e) => setEditStockOwes(Number(e.target.value))}
+                className="w-full p-2 border-2 border-black dark:border-white bg-white dark:bg-slate-800 font-mono font-bold text-sm"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button
+                onClick={handleSave}
+                className="flex-1 bg-black text-white dark:bg-white dark:text-black font-bold uppercase text-xs h-8"
+              >
+                Save
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditing(false)}
+                className="flex-1 border-2 border-black dark:border-white font-bold uppercase text-xs h-8"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : state.goldOwesStock === 0 && state.stockOwesGold === 0 ? (
           <div className="p-4 border border-dashed border-black dark:border-white rounded bg-gray-50 dark:bg-gray-900/10 text-center">
             <div className="text-sm font-bold text-gray-400 dark:text-gray-500">
               No outstanding debts
