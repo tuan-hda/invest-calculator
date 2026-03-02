@@ -4,7 +4,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
   {
     id: "stocks",
     name: "Quỹ cổ phiếu",
-    percentage: 25,
+    percentage: 30,
     subCategories: [
       { id: "vesaf", name: "VESAF", share: 0.5 },
       { id: "ssisca", name: "SSISCA", share: 0.5 },
@@ -13,7 +13,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
   {
     id: "bonds",
     name: "Quỹ trái phiếu",
-    percentage: 15,
+    percentage: 10,
     subCategories: [{ id: "vcbf-fif", name: "VCBF-FIF", share: 1 }],
   },
   { id: "gold", name: "Vàng", percentage: 35 },
