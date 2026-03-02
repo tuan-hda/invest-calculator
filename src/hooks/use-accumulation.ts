@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useUser } from "@clerk/nextjs";
+import { useSupabase } from "@/hooks/use-supabase";
 import { fetchGoldPrice } from "@/lib/gold-price-client";
 import {
   type Transaction,
@@ -11,40 +13,86 @@ import {
 } from "@/lib/accumulation-logic";
 
 export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const { getSupabase } = useSupabase();
   const [state, setState] = useState<AccumulationState | null>(null);
   const [proposal, setProposal] = useState<Transaction | null>(null);
+  const [loading, setLoading] = useState(true);
   const [loadingPrice, setLoadingPrice] = useState(false);
 
-  // Load state from localStorage on mount
+  // Load state from Supabase on mount/user change
   useEffect(() => {
-    const saved = localStorage.getItem("invest_calc_accumulation");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Ensure history items have allocations array if migrating from old version
-        if (parsed.history) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          parsed.history = parsed.history.map((tx: any) => ({
-            ...tx,
-            allocations: tx.allocations || [],
-          }));
+    async function loadState() {
+      if (!isUserLoaded || !user) {
+        if (isUserLoaded && !user) {
+          setState(DEFAULT_STATE);
+          setLoading(false);
         }
-        setState(parsed);
-      } catch (e) {
-        console.error("Failed to parse saved state", e);
-        setState(DEFAULT_STATE);
+        return;
       }
-    } else {
-      setState(DEFAULT_STATE);
-    }
-  }, []);
 
-  // Save state whenever it changes
-  useEffect(() => {
-    if (state) {
-      localStorage.setItem("invest_calc_accumulation", JSON.stringify(state));
+      setLoading(true);
+      try {
+        const supabase = await getSupabase();
+        const { data, error } = await supabase
+          .from("investments")
+          .select("state")
+          .eq("user_id", user.id)
+          .single();
+
+        if (error) {
+          if (error.code === "PGRST116") {
+            // No record found, use default
+            setState(DEFAULT_STATE);
+          } else {
+            console.error("Error fetching state from Supabase:", error);
+            setState(DEFAULT_STATE);
+          }
+        } else if (data?.state) {
+          const parsed = data.state as AccumulationState;
+          // Migration/Safety: Ensure history items have allocations
+          if (parsed.history) {
+            parsed.history = parsed.history.map((tx: Transaction) => ({
+              ...tx,
+              allocations: tx.allocations || [],
+            }));
+          }
+          setState(parsed);
+        }
+      } catch (e) {
+        console.error("Failed to load state", e);
+        setState(DEFAULT_STATE);
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [state]);
+
+    loadState();
+  }, [user, isUserLoaded, getSupabase]);
+
+  // Helper to persist state to Supabase
+  const persistState = useCallback(
+    async (newState: AccumulationState) => {
+      if (!user) return;
+
+      try {
+        const supabase = await getSupabase();
+        const { error } = await supabase.from("investments").upsert(
+          {
+            user_id: user.id,
+            state: newState,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" },
+        );
+
+        if (error) throw error;
+      } catch (e) {
+        console.error("Failed to persist state to Supabase:", e);
+      }
+    },
+    [user, getSupabase],
+  );
 
   const calculateProposal = useCallback(
     async (
@@ -78,29 +126,38 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     [state],
   );
 
-  const confirmTransaction = useCallback(() => {
-    if (!proposal || !state) return;
-    setState({
+  const confirmTransaction = useCallback(async () => {
+    if (!proposal || !state || !user) return;
+
+    const newState = {
       goldOwesStock: proposal.goldOwesStockAfter,
       stockOwesGold: proposal.stockOwesGoldAfter,
       goldCash: proposal.goldCashAfter,
       stockCash: proposal.stockCashAfter,
       history: [proposal, ...state.history],
-    });
+    };
+
+    setState(newState);
     setProposal(null);
     onConfirm?.();
-  }, [proposal, state, onConfirm]);
 
-  const resetState = useCallback(() => {
+    // Persist to Supabase
+    await persistState(newState);
+  }, [proposal, state, user, onConfirm, persistState]);
+
+  const resetState = useCallback(async () => {
+    if (!user) return;
     if (confirm("Are you sure you want to clear all history?")) {
       setState(DEFAULT_STATE);
       setProposal(null);
+      await persistState(DEFAULT_STATE);
     }
-  }, []);
+  }, [user, persistState]);
 
   return {
     state,
     proposal,
+    loadingState: loading,
     loadingPrice,
     calculateProposal,
     confirmTransaction,
