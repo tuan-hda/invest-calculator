@@ -8,5 +8,6 @@ export type Category = {
   id: string;
   name: string;
   percentage: number;
+  amount: number;
   subCategories?: SubCategory[];
 };
