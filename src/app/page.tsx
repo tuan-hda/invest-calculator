@@ -19,13 +19,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
 
 export default function InvestCalculator() {
   const { isLoaded: isUserLoaded, isSignedIn } = useUser();
-  const [amount, setAmount] = useState<number | "">("");
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
 
   const {
@@ -38,42 +35,50 @@ export default function InvestCalculator() {
     resetState,
     updateBorrowing,
     clearProposal,
-  } = useAccumulation({
-    onConfirm: () => {
-      setAmount("");
-    },
-  });
+  } = useAccumulation({});
+
+  // Calculate total amount from categories
+  const totalAmount = useMemo(() => {
+    return categories.reduce((sum, cat) => sum + cat.amount, 0);
+  }, [categories]);
+
+  // Update percentages based on total amount for the logic to work
+  const categoriesWithPercentages = useMemo(() => {
+    if (totalAmount === 0) {
+      return categories.map((cat) => ({ ...cat, percentage: 0 }));
+    }
+    return categories.map((cat) => ({
+      ...cat,
+      percentage: (cat.amount / totalAmount) * 100,
+    }));
+  }, [categories, totalAmount]);
 
   // Debounced calculation for accumulation
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (typeof amount === "number" && amount > 0) {
-        calculateProposal(amount, categories);
+      if (totalAmount > 0) {
+        calculateProposal(totalAmount, categoriesWithPercentages);
       } else {
         clearProposal();
       }
     }, 800);
     return () => clearTimeout(timer);
-  }, [amount, categories, calculateProposal, clearProposal]);
+  }, [
+    totalAmount,
+    categoriesWithPercentages,
+    calculateProposal,
+    clearProposal,
+  ]);
 
-  const totalPercentage = useMemo(() => {
-    return categories.reduce((sum, cat) => sum + cat.percentage, 0);
-  }, [categories]);
-
-  const handlePercentageChange = (id: string, value: string) => {
+  const handleCategoryAmountChange = (id: string, value: string) => {
     const numValue = parseFloat(value);
-    if (isNaN(numValue)) return;
-
     setCategories((prev) =>
       prev.map((cat) =>
-        cat.id === id ? { ...cat, percentage: numValue } : cat,
+        cat.id === id
+          ? { ...cat, amount: isNaN(numValue) ? 0 : numValue }
+          : cat,
       ),
     );
-  };
-
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^0-9]/g, "");
-    setAmount(value === "" ? "" : parseInt(value));
   };
 
   const resetDefaults = () => {
@@ -113,11 +118,9 @@ export default function InvestCalculator() {
           {/* Configuration Section */}
           <div className="space-y-6">
             <InvestmentSettings
-              amount={amount}
+              amount={totalAmount}
               categories={categories}
-              totalPercentage={totalPercentage}
-              onAmountChange={handleAmountChange}
-              onPercentageChange={handlePercentageChange}
+              onPercentageChange={handleCategoryAmountChange}
               onReset={resetDefaults}
             />
             <WalletStatus
@@ -140,7 +143,7 @@ export default function InvestCalculator() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1 pt-6 text-black dark:text-white">
-                {amount === "" || amount === 0 ? (
+                {totalAmount === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-black/50 dark:text-white/50 min-h-[200px] font-bold uppercase tracking-wider text-center">
                     <p>
                       Enter an amount
@@ -151,10 +154,10 @@ export default function InvestCalculator() {
                 ) : (
                   <div className="space-y-6">
                     <InvestmentBreakdown
-                      amount={amount}
-                      categories={categories}
+                      amount={totalAmount}
+                      categories={categoriesWithPercentages}
                       proposal={proposal}
-                      totalPercentage={totalPercentage}
+                      totalPercentage={100}
                     />
                     <AccumulationPlan
                       loadingPrice={loadingPrice}
@@ -164,12 +167,6 @@ export default function InvestCalculator() {
                   </div>
                 )}
               </CardContent>
-              {amount !== "" && amount > 0 && totalPercentage !== 100 && (
-                <CardFooter className="bg-red-200 dark:bg-red-900 text-black dark:text-white text-sm font-bold p-4 border-t-2 border-black dark:border-white flex gap-2 items-center">
-                  <AlertCircle className="h-5 w-5 shrink-0" />
-                  <span>Allocation is {totalPercentage}%. Should be 100%.</span>
-                </CardFooter>
-              )}
             </Card>
 
             {/* History Table */}
