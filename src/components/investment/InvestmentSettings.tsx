@@ -9,13 +9,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { RotateCcw, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Category } from "@/types/investment";
 
 interface InvestmentSettingsProps {
   amount: number | "";
   categories: Category[];
+  totalPercentage: number;
+  onAmountChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onPercentageChange: (id: string, value: string) => void;
   onReset: () => void;
 }
@@ -23,24 +26,44 @@ interface InvestmentSettingsProps {
 export function InvestmentSettings({
   amount,
   categories,
+  totalPercentage,
+  onAmountChange,
   onPercentageChange,
   onReset,
 }: InvestmentSettingsProps) {
   return (
-    <Card className="bg-white dark:bg-slate-900 border-2 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
+    <Card className="bg-white dark:bg-slate-900">
       <CardHeader className="border-b-2 border-black dark:border-white pb-4">
         <CardTitle className="text-2xl font-black uppercase tracking-tight">
-          Portfolio Mix
+          Settings
         </CardTitle>
         <CardDescription className="text-black dark:text-slate-300 font-medium">
-          Enter amounts for each category.
+          Enter your total capital and adjust distribution.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
+        <div className="space-y-2">
+          <Label
+            htmlFor="total-amount"
+            className="font-bold uppercase text-xs tracking-wider"
+          >
+            Total Investment Amount (VND)
+          </Label>
+          <Input
+            id="total-amount"
+            placeholder="e.g. 100,000,000"
+            value={amount === "" ? "" : amount.toLocaleString("vi-VN")}
+            onChange={onAmountChange}
+            className="text-lg font-bold"
+          />
+        </div>
+
+        <Separator className="bg-black dark:bg-white h-[2px]" />
+
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-bold uppercase tracking-wider">
-              Category Amounts (VND)
+              Distribution (%)
             </Label>
             <Button
               variant="ghost"
@@ -65,19 +88,18 @@ export function InvestmentSettings({
                 <div className="relative w-1/2">
                   <Input
                     id={category.id}
-                    type="text"
-                    value={
-                      category.amount === 0
-                        ? ""
-                        : category.amount.toLocaleString("vi-VN")
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={category.percentage}
+                    onChange={(e) =>
+                      onPercentageChange(category.id, e.target.value)
                     }
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, "");
-                      onPercentageChange(category.id, val);
-                    }}
-                    className="text-right font-bold pr-2"
-                    placeholder="0"
+                    className="pr-8 text-right font-bold"
                   />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-black dark:text-white">
+                    %
+                  </span>
                 </div>
               </div>
             ))}
@@ -85,11 +107,19 @@ export function InvestmentSettings({
 
           <div
             className={cn(
-              "flex items-center justify-between p-4 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] text-lg font-black bg-black text-white dark:bg-white dark:text-black",
+              "flex items-center justify-between p-3 border-2 border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] text-sm font-bold",
+              totalPercentage === 100
+                ? "bg-green-300 dark:bg-green-700 text-black dark:text-white"
+                : "bg-yellow-300 dark:bg-yellow-700 text-black dark:text-white",
             )}
           >
-            <span className="uppercase tracking-widest">Total Invested:</span>
-            <span>{amount === "" ? 0 : amount.toLocaleString("vi-VN")}đ</span>
+            <span className="uppercase tracking-wider">Total Allocation:</span>
+            <div className="flex items-center">
+              {totalPercentage !== 100 && (
+                <AlertCircle className="mr-2 h-4 w-4" />
+              )}
+              <span className="text-lg">{totalPercentage}%</span>
+            </div>
           </div>
         </div>
       </CardContent>
