@@ -88,7 +88,10 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
   );
 
   const calculateProposal = useCallback(
-    async (amount: number, categories: any[]) => {
+    async (
+      amount: number,
+      categories: { id: string; name: string; percentage: number }[],
+    ) => {
       if (!amount || !state) return;
       setLoadingPrice(true);
       setProposal(null);

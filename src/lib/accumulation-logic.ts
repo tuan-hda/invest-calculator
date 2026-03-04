@@ -3,7 +3,6 @@ export type CategoryAllocation = {
   name: string;
   amount: number;
   percentage: number;
-  subAllocations?: CategoryAllocation[];
 };
 
 export type Transaction = {
@@ -45,12 +44,7 @@ export const parseGoldPrice = (priceStr: string): number => {
 
 export function calculateInvestmentProposal(
   amount: number,
-  categories: {
-    id: string;
-    name: string;
-    percentage: number;
-    subCategories?: { id: string; name: string; share: number }[];
-  }[],
+  categories: { id: string; name: string; percentage: number }[],
   state: AccumulationState,
   goldPrice: number,
 ): Transaction {
@@ -62,24 +56,13 @@ export function calculateInvestmentProposal(
     ...state,
   };
 
-  // Calculate initial allocations including sub-allocations
-  const allocations: CategoryAllocation[] = categories.map((cat) => {
-    const categoryAmount = amount * (cat.percentage / 100);
-    const subAllocations = cat.subCategories?.map((sub) => ({
-      id: sub.id,
-      name: sub.name,
-      percentage: cat.percentage * sub.share,
-      amount: categoryAmount * sub.share,
-    }));
-
-    return {
-      id: cat.id,
-      name: cat.name,
-      percentage: cat.percentage,
-      amount: categoryAmount,
-      subAllocations,
-    };
-  });
+  // Calculate initial allocations
+  const allocations: CategoryAllocation[] = categories.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    percentage: cat.percentage,
+    amount: amount * (cat.percentage / 100),
+  }));
 
   // Find specific allocations for logic
   const goldAlloc = allocations.find((c) => c.id === "gold")?.amount || 0;
@@ -96,23 +79,7 @@ export function calculateInvestmentProposal(
   const adjustAllocation = (id: string, delta: number) => {
     const alloc = allocations.find((a) => a.id === id);
     if (alloc) {
-      const oldAmount = alloc.amount;
       alloc.amount += delta;
-
-      // Also adjust sub-allocations proportionally if they exist
-      if (alloc.subAllocations && oldAmount > 0) {
-        const ratio = alloc.amount / oldAmount;
-        alloc.subAllocations.forEach((sub) => {
-          sub.amount *= ratio;
-        });
-      } else if (alloc.subAllocations && oldAmount === 0 && alloc.amount > 0) {
-        // If it was 0 and now has amount (e.g. from borrowing), we need some way to distribute it?
-        // For now, let's just use the original shares if we can find them.
-        // But since we don't have the original Category objects here easily for the borrowed amount
-        // let's just keep them as they are for now or skip.
-        // Actually, borrowing only happens between Gold and Stocks.
-        // Stocks usually has subcategories.
-      }
     }
   };
 
@@ -128,7 +95,7 @@ export function calculateInvestmentProposal(
     goldOwesStock -= repayAmount;
     if (repayAmount > 0) {
       goldRepaidStocks = true;
-      note += `Trả nợ Stock ${repayAmount.toLocaleString("vi-VN")}đ. `;
+      note += `Trả nợ Stock ${new Intl.NumberFormat("vi-VN").format(repayAmount)}đ. `;
       adjustAllocation("gold", -repayAmount);
       adjustAllocation("stocks", repayAmount);
     }
@@ -140,7 +107,7 @@ export function calculateInvestmentProposal(
     stockOwesGold -= repayAmount;
     if (repayAmount > 0) {
       stockRepaidGold = true;
-      note += `Nhận nợ Stock ${repayAmount.toLocaleString("vi-VN")}đ. `;
+      note += `Nhận nợ Stock ${new Intl.NumberFormat("vi-VN").format(repayAmount)}đ. `;
       adjustAllocation("stocks", -repayAmount);
       adjustAllocation("gold", repayAmount);
     }
@@ -163,7 +130,7 @@ export function calculateInvestmentProposal(
       goldCash -= leftover;
       stockCash += leftover;
       stockOwesGold += leftover;
-      note += `Dồn ${leftover.toLocaleString("vi-VN")}đ sang Stock. `;
+      note += `Dồn ${new Intl.NumberFormat("vi-VN").format(leftover)}đ sang Stock. `;
       adjustAllocation("gold", -leftover);
       adjustAllocation("stocks", leftover);
     }
@@ -176,7 +143,7 @@ export function calculateInvestmentProposal(
       stockCash -= missing;
       goldCash += missing;
       goldOwesStock += missing;
-      note += `Vay Stock ${missing.toLocaleString("vi-VN")}đ. `;
+      note += `Vay Stock ${new Intl.NumberFormat("vi-VN").format(missing)}đ. `;
       adjustAllocation("stocks", -missing);
       adjustAllocation("gold", missing);
 
@@ -191,7 +158,7 @@ export function calculateInvestmentProposal(
         goldCash -= transfer;
         stockCash += transfer;
         stockOwesGold += transfer;
-        note += `Dồn ${transfer.toLocaleString("vi-VN")}đ sang Stock. `;
+        note += `Dồn ${new Intl.NumberFormat("vi-VN").format(transfer)}đ sang Stock. `;
         adjustAllocation("gold", -transfer);
         adjustAllocation("stocks", transfer);
       }

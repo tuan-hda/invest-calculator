@@ -9,7 +9,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { History } from "lucide-react";
-import { Transaction, CategoryAllocation } from "@/lib/accumulation-logic";
+
+interface Transaction {
+  id: string;
+  date: string;
+  monthlyAmount: number;
+  action: string;
+  goldBought: number;
+  allocations?: { name: string; amount: number }[];
+}
 
 interface InvestmentHistoryProps {
   history: Transaction[];
@@ -27,9 +35,9 @@ export function InvestmentHistory({ history }: InvestmentHistoryProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="max-h-[300px] overflow-auto overflow-x-auto">
-          <Table className="min-w-[600px] w-full">
-            <TableHeader className="bg-gray-100 dark:bg-slate-800 sticky top-0 z-10">
+        <div className="max-h-[300px] overflow-auto">
+          <Table>
+            <TableHeader className="bg-gray-100 dark:bg-slate-800 sticky top-0">
               <TableRow>
                 <TableHead className="font-bold uppercase text-xs w-[100px] pl-4">
                   Date
@@ -57,39 +65,27 @@ export function InvestmentHistory({ history }: InvestmentHistoryProps) {
                   <TableCell className="font-bold text-xs pl-4 py-3 align-top">
                     {tx.date}
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-right py-3 align-top whitespace-nowrap">
-                    {tx.monthlyAmount.toLocaleString("vi-VN")}
+                  <TableCell className="font-mono text-xs text-right py-3 align-top">
+                    {Math.round(tx.monthlyAmount / 1000000)}M
                   </TableCell>
-                  <TableCell className="text-xs py-2 align-top min-w-[200px]">
-                    <div className="space-y-2">
+                  <TableCell className="text-xs py-2 align-top">
+                    <div className="space-y-1">
                       {tx.allocations?.map((alloc, idx) => (
-                        <div key={idx} className="space-y-0.5">
-                          <div className="flex justify-between gap-2 text-[10px]">
-                            <span className="text-gray-500 dark:text-gray-400 font-bold">
-                              {alloc.name}
-                            </span>
-                            <span className="font-mono">
-                              {alloc.amount.toLocaleString("vi-VN")}
-                            </span>
-                          </div>
-                          {alloc.subAllocations?.map((sub, sIdx) => (
-                            <div
-                              key={sIdx}
-                              className="flex justify-between gap-2 text-[9px] pl-2 opacity-80"
-                            >
-                              <span className="text-gray-400 dark:text-gray-500 italic">
-                                - {sub.name}
-                              </span>
-                              <span className="font-mono text-gray-400 dark:text-gray-500">
-                                {sub.amount.toLocaleString("vi-VN")}
-                              </span>
-                            </div>
-                          ))}
+                        <div
+                          key={idx}
+                          className="flex justify-between gap-2 text-[10px]"
+                        >
+                          <span className="text-gray-500 dark:text-gray-400">
+                            {alloc.name}
+                          </span>
+                          <span className="font-mono">
+                            {parseFloat((alloc.amount / 1000000).toFixed(1))}M
+                          </span>
                         </div>
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs font-medium py-3 max-w-[200px] min-w-[150px] leading-tight whitespace-normal align-top">
+                  <TableCell className="text-xs font-medium py-3 max-w-[150px] leading-tight whitespace-normal align-top">
                     {tx.action}
                   </TableCell>
                   <TableCell className="font-bold text-xs text-right pr-4 py-3 text-green-600 dark:text-green-400 align-top">
