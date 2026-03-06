@@ -11,7 +11,7 @@ import { formatInvestDate } from "@/lib/date-utils";
 const FMARKET_SPREADSHEET_ID = "16u_ogbNTrFO119iKRf8fvIMy--Cz3mC0Ja56UzEMny4";
 const FMARKET_SHEET_GID = "1096936645";
 const CRYPTO_SPREADSHEET_ID = "1kzA4eYqft8gEkht91Bf9fSXkFHw-9aKrKbe7-808gRs";
-const CRYPTO_SHEET_GID = "1028488115";
+const CRYPTO_SHEET_GID = "1096936645";
 
 const FMARKET_URL = `https://docs.google.com/spreadsheets/d/${FMARKET_SPREADSHEET_ID}/edit?usp=sharing&gid=${FMARKET_SHEET_GID}`;
 const CRYPTO_URL = `https://docs.google.com/spreadsheets/d/${CRYPTO_SPREADSHEET_ID}/edit?usp=sharing&gid=${CRYPTO_SHEET_GID}`;
