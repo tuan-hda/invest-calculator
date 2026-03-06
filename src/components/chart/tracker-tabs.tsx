@@ -1,4 +1,4 @@
-import { memo, useRef, useEffect } from "react";
+import { memo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
@@ -11,39 +11,66 @@ export const TrackerTabs = memo(function TrackerTabs({
   fmarketUrl,
   cryptoUrl,
 }: TrackerTabsProps) {
-  const tabsRef = useRef<HTMLDivElement>(null);
-  const fmarketContainerRef = useRef<HTMLDivElement>(null);
-  const cryptoContainerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    // Prevent all keyboard events from bubbling out of the iframe containers
-    const handleKeyEvent = (e: KeyboardEvent) => {
-      e.stopPropagation();
+    const saved = { x: 0, y: 0 };
+    let locked = false;
+
+    const save = () => {
+      saved.x = window.scrollX;
+      saved.y = window.scrollY;
     };
 
-    const attachListeners = (container: HTMLDivElement | null) => {
-      if (!container) return;
-      
-      // Capture all keyboard events in the capture phase and stop propagation
-      container.addEventListener("keydown", handleKeyEvent, { capture: true });
-      container.addEventListener("keyup", handleKeyEvent, { capture: true });
-      container.addEventListener("keypress", handleKeyEvent, { capture: true });
+    const restore = () => window.scrollTo(saved.x, saved.y);
+
+    // While iframe is focused, any scroll that slips through gets immediately reverted
+    const handleScroll = () => {
+      if (locked) {
+        requestAnimationFrame(restore);
+      } else {
+        save();
+      }
     };
 
-    const removeListeners = (container: HTMLDivElement | null) => {
-      if (!container) return;
-      
-      container.removeEventListener("keydown", handleKeyEvent);
-      container.removeEventListener("keyup", handleKeyEvent);
-      container.removeEventListener("keypress", handleKeyEvent);
+    // Window loses focus → iframe gained it
+    const handleBlur = () => {
+      save();
+      locked = true;
+      requestAnimationFrame(restore); // snap back in case blur itself scrolled
     };
 
-    attachListeners(fmarketContainerRef.current);
-    attachListeners(cryptoContainerRef.current);
+    // Window regains focus → unlock after restoring
+    const handleFocus = () => {
+      requestAnimationFrame(() => {
+        restore();
+        locked = false;
+      });
+    };
+
+    // Nuclear: prevent iframe's internal scrollIntoView() from moving the parent page
+    const origScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (...args) {
+      if (!locked) origScrollIntoView.apply(this, args);
+    };
+
+    // Nuclear: force preventScroll on any focus() call while iframe is active
+    const origFocus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function (options?: FocusOptions) {
+      origFocus.call(
+        this,
+        locked ? { ...options, preventScroll: true } : options,
+      );
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("focus", handleFocus);
 
     return () => {
-      removeListeners(fmarketContainerRef.current);
-      removeListeners(cryptoContainerRef.current);
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("focus", handleFocus);
+      Element.prototype.scrollIntoView = origScrollIntoView;
+      HTMLElement.prototype.focus = origFocus;
     };
   }, []);
 
@@ -55,7 +82,7 @@ export const TrackerTabs = memo(function TrackerTabs({
       animate={{ opacity: 1 }}
       className="pt-8"
     >
-      <Tabs defaultValue="fmarket" className="w-full" ref={tabsRef}>
+      <Tabs defaultValue="fmarket" className="w-full">
         <div className="flex justify-center mb-6">
           <TabsList>
             <TabsTrigger value="fmarket">Fmarket Tracker</TabsTrigger>
@@ -65,11 +92,21 @@ export const TrackerTabs = memo(function TrackerTabs({
 
         <TabsContent value="fmarket" className="w-full">
           <div
-            ref={fmarketContainerRef}
-            className="w-full bg-background rounded-lg border border-border overflow-hidden shadow-md"
+            className="iframe-container w-full bg-background rounded-lg border border-border overflow-hidden shadow-md"
             style={{ overscrollBehavior: "contain" }}
-            tabIndex={0}
           >
+            <div
+              tabIndex={-1}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: 0,
+                height: 0,
+                opacity: 0,
+                pointerEvents: "none",
+              }}
+            ></div>
             <iframe
               src={fmarketUrl}
               className="w-full"
@@ -85,10 +122,8 @@ export const TrackerTabs = memo(function TrackerTabs({
 
         <TabsContent value="crypto" className="w-full">
           <div
-            ref={cryptoContainerRef}
             className="w-full bg-background rounded-lg border border-border overflow-hidden shadow-md"
             style={{ overscrollBehavior: "contain" }}
-            tabIndex={0}
           >
             <iframe
               src={cryptoUrl}
