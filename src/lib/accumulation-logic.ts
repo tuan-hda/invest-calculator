@@ -50,13 +50,17 @@ export function calculateInvestmentProposal(
   state: AccumulationState,
   goldPrice: number,
 ): Transaction {
+  debugger;
   const pricePerMinUnit = goldPrice * MIN_GOLD_UNIT;
 
   // Start with current state
-  let { goldCash, stockCash, goldOwesStock, stockOwesGold } = {
+  let { goldOwesStock, stockOwesGold } = {
     ...DEFAULT_STATE,
     ...state,
   };
+
+  let goldCash = DEFAULT_STATE.goldCash;
+  let stockCash = DEFAULT_STATE.stockCash;
 
   // Store original borrowing amounts (will be restored if inter-fund borrowing is disabled)
   const originalGoldOwesStock = goldOwesStock;
