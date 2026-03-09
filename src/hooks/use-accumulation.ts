@@ -102,10 +102,21 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
         const goldData = result.data;
 
         const pricePerChi = parseGoldPrice(goldData.price);
+        
+        // Disable inter-fund borrowing if either gold or stock percentage is 0%
+        const goldPercentage = categories.find(c => c.id === "gold")?.percentage ?? 0;
+        const stockPercentage = categories.find(c => c.id === "stocks")?.percentage ?? 0;
+        const shouldDisableInterFundBorrowing = goldPercentage === 0 || stockPercentage === 0;
+        
+        const stateForProposal = {
+          ...state,
+          disableInterFundBorrowing: shouldDisableInterFundBorrowing,
+        };
+        
         const proposalTrans = calculateInvestmentProposal(
           amount,
           categories,
-          state,
+          stateForProposal,
           pricePerChi,
         );
 
