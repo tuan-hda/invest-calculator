@@ -40,7 +40,7 @@ export function InvestmentHistory({ history }: InvestmentHistoryProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="max-h-[300px] overflow-auto">
+        <div className="sm:w-auto w-[calc(100vw-60px)] overflow-x-auto">
           <Table>
             <TableHeader className="bg-gray-100 dark:bg-slate-800 sticky top-0">
               <TableRow>
