@@ -26,6 +26,7 @@ export type AccumulationState = {
   goldCash: number; // accumulated pending cash
   stockCash: number; // accumulated pending cash
   history: Transaction[];
+  disableInterFundBorrowing?: boolean; // when true, inter-fund borrowing Won't affect current period
 };
 
 export const DEFAULT_STATE: AccumulationState = {
@@ -34,6 +35,7 @@ export const DEFAULT_STATE: AccumulationState = {
   goldCash: 0,
   stockCash: 0,
   history: [],
+  disableInterFundBorrowing: false,
 };
 
 export const MIN_GOLD_UNIT = 0.5; // chi
@@ -55,6 +57,11 @@ export function calculateInvestmentProposal(
     ...DEFAULT_STATE,
     ...state,
   };
+
+  // Store original borrowing amounts (will be restored if inter-fund borrowing is disabled)
+  const originalGoldOwesStock = goldOwesStock;
+  const originalStockOwesGold = stockOwesGold;
+  const disableInterFundBorrowing = state.disableInterFundBorrowing ?? false;
 
   // Calculate initial allocations
   const allocations: CategoryAllocation[] = categories.map((cat) => ({
@@ -83,33 +90,35 @@ export function calculateInvestmentProposal(
     }
   };
 
-  // 1. Repayment Phase
+  // 1. Repayment Phase - Skip if inter-fund borrowing is disabled
   let goldRepaidStocks = false;
   let stockRepaidGold = false;
 
-  if (goldOwesStock > 0) {
-    const maxRepay = goldCash;
-    const repayAmount = Math.min(goldOwesStock, maxRepay);
-    goldCash -= repayAmount;
-    stockCash += repayAmount;
-    goldOwesStock -= repayAmount;
-    if (repayAmount > 0) {
-      goldRepaidStocks = true;
-      note += `Trả nợ Stock ${new Intl.NumberFormat("vi-VN").format(repayAmount)}đ. `;
-      adjustAllocation("gold", -repayAmount);
-      adjustAllocation("stocks", repayAmount);
-    }
-  } else if (stockOwesGold > 0) {
-    const maxRepay = stockCash;
-    const repayAmount = Math.min(stockOwesGold, maxRepay);
-    stockCash -= repayAmount;
-    goldCash += repayAmount;
-    stockOwesGold -= repayAmount;
-    if (repayAmount > 0) {
-      stockRepaidGold = true;
-      note += `Nhận nợ Stock ${new Intl.NumberFormat("vi-VN").format(repayAmount)}đ. `;
-      adjustAllocation("stocks", -repayAmount);
-      adjustAllocation("gold", repayAmount);
+  if (!disableInterFundBorrowing) {
+    if (goldOwesStock > 0) {
+      const maxRepay = goldCash;
+      const repayAmount = Math.min(goldOwesStock, maxRepay);
+      goldCash -= repayAmount;
+      stockCash += repayAmount;
+      goldOwesStock -= repayAmount;
+      if (repayAmount > 0) {
+        goldRepaidStocks = true;
+        note += `Trả nợ Stock ${new Intl.NumberFormat("vi-VN").format(repayAmount)}đ. `;
+        adjustAllocation("gold", -repayAmount);
+        adjustAllocation("stocks", repayAmount);
+      }
+    } else if (stockOwesGold > 0) {
+      const maxRepay = stockCash;
+      const repayAmount = Math.min(stockOwesGold, maxRepay);
+      stockCash -= repayAmount;
+      goldCash += repayAmount;
+      stockOwesGold -= repayAmount;
+      if (repayAmount > 0) {
+        stockRepaidGold = true;
+        note += `Nhận nợ Stock ${new Intl.NumberFormat("vi-VN").format(repayAmount)}đ. `;
+        adjustAllocation("stocks", -repayAmount);
+        adjustAllocation("gold", repayAmount);
+      }
     }
   }
 
@@ -125,7 +134,7 @@ export function calculateInvestmentProposal(
     note += `Mua ${buyAmount} chỉ. `;
 
     // Handle leftover: transfer it to stocks if not repaid gold this period
-    if (goldCash > 0 && !stockRepaidGold) {
+    if (goldCash > 0 && !stockRepaidGold && !disableInterFundBorrowing) {
       const leftover = goldCash;
       goldCash -= leftover;
       stockCash += leftover;
@@ -135,34 +144,52 @@ export function calculateInvestmentProposal(
       adjustAllocation("stocks", leftover);
     }
   } else {
-    // Borrowing Logic
-    const missing = pricePerMinUnit - goldCash;
-    const maxBorrow = stockCash;
+    // Borrowing Logic - Skip if inter-fund borrowing is disabled
+    if (!disableInterFundBorrowing) {
+      const missing = pricePerMinUnit - goldCash;
+      const maxBorrow = stockCash;
 
-    if (missing > 0 && missing <= maxBorrow && !goldRepaidStocks) {
-      stockCash -= missing;
-      goldCash += missing;
-      goldOwesStock += missing;
-      note += `Vay Stock ${new Intl.NumberFormat("vi-VN").format(missing)}đ. `;
-      adjustAllocation("stocks", -missing);
-      adjustAllocation("gold", missing);
+      if (missing > 0 && missing <= maxBorrow && !goldRepaidStocks) {
+        stockCash -= missing;
+        goldCash += missing;
+        goldOwesStock += missing;
+        note += `Vay Stock ${new Intl.NumberFormat("vi-VN").format(missing)}đ. `;
+        adjustAllocation("stocks", -missing);
+        adjustAllocation("gold", missing);
 
-      goldBought = MIN_GOLD_UNIT;
-      goldCost = pricePerMinUnit;
-      goldCash -= goldCost;
-      note += `Mua 0.5 chỉ. `;
+        goldBought = MIN_GOLD_UNIT;
+        goldCost = pricePerMinUnit;
+        goldCash -= goldCost;
+        note += `Mua 0.5 chỉ. `;
+      } else {
+        // Transfer leftover if not repaid gold
+        if (goldCash > 0 && !stockRepaidGold) {
+          const transfer = goldCash;
+          goldCash -= transfer;
+          stockCash += transfer;
+          stockOwesGold += transfer;
+          note += `Dồn ${new Intl.NumberFormat("vi-VN").format(transfer)}đ sang Stock. `;
+          adjustAllocation("gold", -transfer);
+          adjustAllocation("stocks", transfer);
+        }
+      }
     } else {
-      // Transfer leftover if not repaid gold
-      if (goldCash > 0 && !stockRepaidGold) {
+      // When borrowing is disabled, just transfer leftover gold to stocks without creating debt
+      if (goldCash > 0) {
         const transfer = goldCash;
         goldCash -= transfer;
         stockCash += transfer;
-        stockOwesGold += transfer;
         note += `Dồn ${new Intl.NumberFormat("vi-VN").format(transfer)}đ sang Stock. `;
         adjustAllocation("gold", -transfer);
         adjustAllocation("stocks", transfer);
       }
     }
+  }
+
+  // Restore original borrowing amounts if borrowing is disabled
+  if (disableInterFundBorrowing) {
+    goldOwesStock = originalGoldOwesStock;
+    stockOwesGold = originalStockOwesGold;
   }
 
   return {

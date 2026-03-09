@@ -11,12 +11,14 @@ type WalletStatusProps = {
   state: AccumulationState | null;
   onReset: () => void;
   onUpdateBorrowing: (goldOwesStock: number, stockOwesGold: number) => void;
+  onToggleDisableInterFundBorrowing: () => void;
 };
 
 export function WalletStatus({
   state,
   onReset,
   onUpdateBorrowing,
+  onToggleDisableInterFundBorrowing,
 }: WalletStatusProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editGoldOwes, setEditGoldOwes] = useState(0);
@@ -59,6 +61,36 @@ export function WalletStatus({
         </div>
       </CardHeader>
       <CardContent className="p-4 space-y-3">
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Inter-Fund Borrowing Mode
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-2 border-2 border-black dark:border-white rounded bg-purple-50 dark:bg-purple-900/20">
+            <button
+              onClick={onToggleDisableInterFundBorrowing}
+              className={`flex-1 p-2 font-bold uppercase text-xs rounded transition-all ${
+                !state.disableInterFundBorrowing
+                  ? "bg-green-400 dark:bg-green-700 text-black dark:text-white border-2 border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600"
+              }`}
+            >
+              Enabled
+            </button>
+            <button
+              onClick={onToggleDisableInterFundBorrowing}
+              className={`flex-1 p-2 font-bold uppercase text-xs rounded transition-all ${
+                state.disableInterFundBorrowing
+                  ? "bg-orange-400 dark:bg-orange-700 text-black dark:text-white border-2 border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600"
+              }`}
+            >
+              Disabled
+            </button>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between mb-2">
           <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
             Inter-Fund Borrowing
