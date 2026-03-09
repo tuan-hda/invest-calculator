@@ -128,6 +128,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
       goldCash: proposal.goldCashAfter,
       stockCash: proposal.stockCashAfter,
       history: [proposal, ...state.history],
+      disableInterFundBorrowing: state.disableInterFundBorrowing,
     };
 
     setState(newState);
@@ -163,6 +164,18 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     [state, user, persistState],
   );
 
+  const toggleDisableInterFundBorrowing = useCallback(async () => {
+    if (!state || !user) return;
+
+    const newState = {
+      ...state,
+      disableInterFundBorrowing: !state.disableInterFundBorrowing,
+    };
+
+    setState(newState);
+    await persistState(newState);
+  }, [state, user, persistState]);
+
   return {
     state,
     proposal,
@@ -172,6 +185,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     confirmTransaction,
     resetState,
     updateBorrowing,
+    toggleDisableInterFundBorrowing,
     clearProposal: () => setProposal(null),
   };
 }

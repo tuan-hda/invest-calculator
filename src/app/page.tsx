@@ -37,6 +37,7 @@ export default function InvestCalculator() {
     confirmTransaction,
     resetState,
     updateBorrowing,
+    toggleDisableInterFundBorrowing,
     clearProposal,
   } = useAccumulation({
     onConfirm: () => {
@@ -124,6 +125,7 @@ export default function InvestCalculator() {
               state={accumulationState}
               onReset={resetState}
               onUpdateBorrowing={updateBorrowing}
+              onToggleDisableInterFundBorrowing={toggleDisableInterFundBorrowing}
             />
             <GoldPriceCard />
           </div>
