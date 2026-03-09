@@ -1,22 +1,20 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PiggyBank, Trash2 } from "lucide-react";
+import { PiggyBank } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccumulationState } from "@/lib/accumulation-logic";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 type WalletStatusProps = {
   state: AccumulationState | null;
-  onReset: () => void;
   onUpdateBorrowing: (goldOwesStock: number, stockOwesGold: number) => void;
   onToggleDisableInterFundBorrowing: () => void;
 };
 
 export function WalletStatus({
   state,
-  onReset,
   onUpdateBorrowing,
   onToggleDisableInterFundBorrowing,
 }: WalletStatusProps) {
@@ -49,15 +47,6 @@ export function WalletStatus({
               Accumulation Tracker
             </CardTitle>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onReset}
-            className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/50"
-            title="Reset All"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
         </div>
       </CardHeader>
       <CardContent className="p-4 space-y-3">

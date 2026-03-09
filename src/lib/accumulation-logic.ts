@@ -3,6 +3,13 @@ export type CategoryAllocation = {
   name: string;
   amount: number;
   percentage: number;
+  subAllocations?: {
+    id: string;
+    name: string;
+    share: number;
+    amount: number;
+    percentage: number;
+  }[];
 };
 
 export type Transaction = {
@@ -46,7 +53,12 @@ export const parseGoldPrice = (priceStr: string): number => {
 
 export function calculateInvestmentProposal(
   amount: number,
-  categories: { id: string; name: string; percentage: number }[],
+  categories: {
+    id: string;
+    name: string;
+    percentage: number;
+    subCategories?: { id: string; name: string; share: number }[];
+  }[],
   state: AccumulationState,
   goldPrice: number,
 ): Transaction {
@@ -73,6 +85,11 @@ export function calculateInvestmentProposal(
     name: cat.name,
     percentage: cat.percentage,
     amount: amount * (cat.percentage / 100),
+    subAllocations: cat.subCategories?.map((sub) => ({
+      ...sub,
+      amount: amount * (cat.percentage / 100) * sub.share,
+      percentage: cat.percentage * sub.share,
+    })),
   }));
 
   // Find specific allocations for logic
@@ -137,15 +154,41 @@ export function calculateInvestmentProposal(
     goldCost = cost;
     note += `Mua ${buyAmount} chỉ. `;
 
-    // Handle leftover: transfer it to stocks if not repaid gold this period
-    if (goldCash > 0 && !stockRepaidGold && !disableInterFundBorrowing) {
+    if (goldCash > 0 && !disableInterFundBorrowing) {
       const leftover = goldCash;
-      goldCash -= leftover;
-      stockCash += leftover;
-      stockOwesGold += leftover;
-      note += `Dồn ${new Intl.NumberFormat("vi-VN").format(leftover)}đ sang Stock. `;
-      adjustAllocation("gold", -leftover);
-      adjustAllocation("stocks", leftover);
+      if (stockRepaidGold) {
+        // Stock repaid gold this period — try to borrow missing to get next 0.5 chỉ
+        const missing = pricePerMinUnit - leftover;
+        if (missing > 0 && missing <= stockCash) {
+          stockCash -= missing;
+          goldCash += missing;
+          goldOwesStock += missing;
+          note += `Vay Stock ${new Intl.NumberFormat("vi-VN").format(missing)}đ để mua thêm. `;
+          adjustAllocation("stocks", -missing);
+          adjustAllocation("gold", missing);
+
+          goldBought += MIN_GOLD_UNIT;
+          goldCost += pricePerMinUnit;
+          goldCash -= pricePerMinUnit;
+          note += `Mua thêm 0.5 chỉ. `;
+        } else {
+          // Can't borrow enough — move leftover to stocks
+          goldCash -= leftover;
+          stockCash += leftover;
+          stockOwesGold += leftover;
+          note += `Dồn ${new Intl.NumberFormat("vi-VN").format(leftover)}đ sang Stock. `;
+          adjustAllocation("gold", -leftover);
+          adjustAllocation("stocks", leftover);
+        }
+      } else {
+        // Normal case: move leftover to stocks
+        goldCash -= leftover;
+        stockCash += leftover;
+        stockOwesGold += leftover;
+        note += `Dồn ${new Intl.NumberFormat("vi-VN").format(leftover)}đ sang Stock. `;
+        adjustAllocation("gold", -leftover);
+        adjustAllocation("stocks", leftover);
+      }
     }
   } else {
     // Borrowing Logic - Skip if inter-fund borrowing is disabled
@@ -198,7 +241,7 @@ export function calculateInvestmentProposal(
 
   return {
     id: Date.now().toString(),
-    date: new Date().toLocaleDateString("vi-VN"),
+    date: new Date().toISOString(),
     monthlyAmount: amount,
     goldPrice: goldPrice,
     action: note,
