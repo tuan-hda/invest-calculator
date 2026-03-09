@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { History } from "lucide-react";
+import { formatDate } from "date-fns";
 
 interface Transaction {
   id: string;
@@ -16,7 +17,11 @@ interface Transaction {
   monthlyAmount: number;
   action: string;
   goldBought: number;
-  allocations?: { name: string; amount: number }[];
+  allocations?: {
+    name: string;
+    amount: number;
+    subAllocations?: { name: string; amount: number }[];
+  }[];
 }
 
 interface InvestmentHistoryProps {
@@ -63,7 +68,7 @@ export function InvestmentHistory({ history }: InvestmentHistoryProps) {
                   className="border-b border-gray-100 dark:border-gray-800 last:border-0"
                 >
                   <TableCell className="font-bold text-xs pl-4 py-3 align-top">
-                    {tx.date}
+                    {formatDate(tx.date, "dd/MM/yyyy")}
                   </TableCell>
                   <TableCell className="font-mono text-xs text-right py-3 align-top">
                     {Math.round(tx.monthlyAmount / 1000000)}M
@@ -71,16 +76,28 @@ export function InvestmentHistory({ history }: InvestmentHistoryProps) {
                   <TableCell className="text-xs py-2 align-top">
                     <div className="space-y-1">
                       {tx.allocations?.map((alloc, idx) => (
-                        <div
-                          key={idx}
-                          className="flex justify-between gap-2 text-[10px]"
-                        >
-                          <span className="text-gray-500 dark:text-gray-400">
-                            {alloc.name}
-                          </span>
-                          <span className="font-mono">
-                            {parseFloat((alloc.amount / 1000000).toFixed(1))}M
-                          </span>
+                        <div key={idx} className="space-y-0.5">
+                          <div className="flex justify-between gap-2 text-[10px]">
+                            <span className="text-gray-500 dark:text-gray-400">
+                              {alloc.name}
+                            </span>
+                            <span className="font-mono">
+                              {parseFloat((alloc.amount / 1000000).toFixed(1))}M
+                            </span>
+                          </div>
+                          {alloc.subAllocations?.map((sub, subIdx) => (
+                            <div
+                              key={subIdx}
+                              className="flex justify-between gap-2 text-[10px] pl-3"
+                            >
+                              <span className="text-gray-400 dark:text-gray-500 italic">
+                                - {sub.name}
+                              </span>
+                              <span className="font-mono text-gray-400 dark:text-gray-500">
+                                {parseFloat((sub.amount / 1000000).toFixed(1))}M
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       ))}
                     </div>

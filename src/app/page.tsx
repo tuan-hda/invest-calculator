@@ -35,7 +35,6 @@ export default function InvestCalculator() {
     loadingPrice,
     calculateProposal,
     confirmTransaction,
-    resetState,
     updateBorrowing,
     toggleDisableInterFundBorrowing,
     clearProposal,
@@ -123,9 +122,10 @@ export default function InvestCalculator() {
             />
             <WalletStatus
               state={accumulationState}
-              onReset={resetState}
               onUpdateBorrowing={updateBorrowing}
-              onToggleDisableInterFundBorrowing={toggleDisableInterFundBorrowing}
+              onToggleDisableInterFundBorrowing={
+                toggleDisableInterFundBorrowing
+              }
             />
             <GoldPriceCard />
           </div>
