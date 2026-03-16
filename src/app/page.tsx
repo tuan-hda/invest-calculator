@@ -26,16 +26,20 @@ import { AlertCircle } from "lucide-react";
 export default function InvestCalculator() {
   const { isLoaded: isUserLoaded, isSignedIn } = useUser();
   const [amount, setAmount] = useState<number | "">("");
-  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  const [pendingCategories, setPendingCategories] = useState<Category[] | null>(
+    null,
+  );
 
   const {
     state: accumulationState,
     proposal,
+    categories,
     loadingState,
     loadingPrice,
     calculateProposal,
     confirmTransaction,
     updateBorrowing,
+    updateCategories,
     toggleDisableInterFundBorrowing,
     clearProposal,
   } = useAccumulation({
@@ -57,18 +61,30 @@ export default function InvestCalculator() {
   }, [amount, categories, calculateProposal, clearProposal]);
 
   const totalPercentage = useMemo(() => {
-    return categories.reduce((sum, cat) => sum + cat.percentage, 0);
-  }, [categories]);
+    const source = pendingCategories ?? categories;
+    return source.reduce((sum, cat) => sum + cat.percentage, 0);
+  }, [pendingCategories, categories]);
 
   const handlePercentageChange = (id: string, value: string) => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return;
 
-    setCategories((prev) =>
-      prev.map((cat) =>
-        cat.id === id ? { ...cat, percentage: numValue } : cat,
-      ),
+    const base = pendingCategories ?? categories;
+    const newCategories = base.map((cat) =>
+      cat.id === id ? { ...cat, percentage: numValue } : cat,
     );
+    setPendingCategories(newCategories);
+  };
+
+  const handleConfirmCategories = () => {
+    if (pendingCategories) {
+      updateCategories(pendingCategories);
+      setPendingCategories(null);
+    }
+  };
+
+  const handleCancelCategories = () => {
+    setPendingCategories(null);
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,7 +93,7 @@ export default function InvestCalculator() {
   };
 
   const resetDefaults = () => {
-    setCategories(DEFAULT_CATEGORIES);
+    setPendingCategories(DEFAULT_CATEGORIES);
   };
 
   if (!isUserLoaded) {
@@ -114,11 +130,15 @@ export default function InvestCalculator() {
           <div className="space-y-6">
             <InvestmentSettings
               amount={amount}
-              categories={categories}
+              categories={pendingCategories ?? categories}
+              committedCategories={categories}
               totalPercentage={totalPercentage}
               onAmountChange={handleAmountChange}
               onPercentageChange={handlePercentageChange}
               onReset={resetDefaults}
+              onConfirmCategories={handleConfirmCategories}
+              onCancelCategories={handleCancelCategories}
+              hasPendingChanges={pendingCategories !== null}
             />
             <WalletStatus
               state={accumulationState}

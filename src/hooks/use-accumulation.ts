@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useSupabase } from "@/hooks/use-supabase";
 import { fetchGoldPrice } from "@/lib/gold-price-client";
+import { DEFAULT_CATEGORIES } from "@/constants/investment";
 import {
   type Transaction,
   type AccumulationState,
@@ -11,6 +12,7 @@ import {
   calculateInvestmentProposal,
   parseGoldPrice,
 } from "@/lib/accumulation-logic";
+import { Category } from "@/types/investment";
 
 type InvestmentHistoryRow = {
   id: string;
@@ -67,7 +69,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
         // 1. Load the investments row (settings / running balances)
         const { data: inv, error: invErr } = await supabase
           .from("investments")
-          .select("id, state")
+          .select("id, state, portfolio_config")
           .eq("user_id", user?.id)
           .single();
 
@@ -110,6 +112,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
           goldCash: 0,
           stockCash: 0,
           disableInterFundBorrowing: stored.disableInterFundBorrowing ?? false,
+          categories: inv.portfolio_config ?? DEFAULT_CATEGORIES,
           history,
         });
       } catch (e) {
@@ -138,6 +141,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
         goldCash: newState.goldCash,
         stockCash: newState.stockCash,
         disableInterFundBorrowing: newState.disableInterFundBorrowing,
+        categories: newState.categories, // Kept for backward compatibility
       };
 
       try {
@@ -148,6 +152,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
             {
               user_id: user.id,
               state: settingsBlob,
+              portfolio_config: newState.categories,
               updated_at: new Date().toISOString(),
             },
             { onConflict: "user_id" },
@@ -195,10 +200,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
   );
 
   const calculateProposal = useCallback(
-    async (
-      amount: number,
-      categories: { id: string; name: string; percentage: number }[],
-    ) => {
+    async (amount: number, categories: Category[]) => {
       if (!amount || !state) return;
       setLoadingPrice(true);
       setProposal(null);
@@ -352,15 +354,28 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     await persistSettings(newState, investmentId);
   }, [state, user, investmentId, persistSettings]);
 
+  const updateCategories = useCallback(
+    async (categories: Category[]) => {
+      if (!state || !user) return;
+
+      const newState = { ...state, categories };
+      setState(newState);
+      await persistSettings(newState, investmentId);
+    },
+    [state, user, investmentId, persistSettings],
+  );
+
   return {
     state,
     proposal,
+    categories: state?.categories ?? DEFAULT_CATEGORIES,
     loadingState: loading,
     loadingPrice,
     calculateProposal,
     confirmTransaction,
     resetState,
     updateBorrowing,
+    updateCategories,
     toggleDisableInterFundBorrowing,
     clearProposal: () => setProposal(null),
   };

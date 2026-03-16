@@ -10,26 +10,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { RotateCcw, AlertCircle } from "lucide-react";
+import { RotateCcw, AlertCircle, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Category } from "@/types/investment";
 
 interface InvestmentSettingsProps {
   amount: number | "";
   categories: Category[];
+  committedCategories?: Category[];
   totalPercentage: number;
+  hasPendingChanges?: boolean;
   onAmountChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onPercentageChange: (id: string, value: string) => void;
   onReset: () => void;
+  onConfirmCategories?: () => void;
+  onCancelCategories?: () => void;
 }
 
 export function InvestmentSettings({
   amount,
   categories,
   totalPercentage,
+  hasPendingChanges = false,
   onAmountChange,
   onPercentageChange,
   onReset,
+  onConfirmCategories,
+  onCancelCategories,
 }: InvestmentSettingsProps) {
   return (
     <Card className="bg-white dark:bg-slate-900">
@@ -104,6 +111,28 @@ export function InvestmentSettings({
               </div>
             ))}
           </div>
+
+          {hasPendingChanges && (
+            <div className="flex gap-2 pt-1">
+              <Button
+                size="sm"
+                onClick={onConfirmCategories}
+                className="flex-1 h-9 text-xs uppercase font-black bg-black dark:bg-white text-white dark:text-black border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+              >
+                <Check className="mr-1 h-3 w-3" />
+                Confirm
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onCancelCategories}
+                className="flex-1 h-9 text-xs uppercase font-black border-2 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+              >
+                <X className="mr-1 h-3 w-3" />
+                Cancel
+              </Button>
+            </div>
+          )}
 
           <div
             className={cn(

@@ -1,3 +1,6 @@
+import { DEFAULT_CATEGORIES } from "@/constants/investment";
+import { Category } from "@/types/investment";
+
 export type CategoryAllocation = {
   id: string;
   name: string;
@@ -34,6 +37,7 @@ export type AccumulationState = {
   stockCash: number; // accumulated pending cash
   history: Transaction[];
   disableInterFundBorrowing?: boolean; // when true, inter-fund borrowing Won't affect current period
+  categories?: Category[];
 };
 
 export const DEFAULT_STATE: AccumulationState = {
@@ -43,6 +47,7 @@ export const DEFAULT_STATE: AccumulationState = {
   stockCash: 0,
   history: [],
   disableInterFundBorrowing: false,
+  categories: DEFAULT_CATEGORIES,
 };
 
 export const MIN_GOLD_UNIT = 0.5; // chi
@@ -53,12 +58,7 @@ export const parseGoldPrice = (priceStr: string): number => {
 
 export function calculateInvestmentProposal(
   amount: number,
-  categories: {
-    id: string;
-    name: string;
-    percentage: number;
-    subCategories?: { id: string; name: string; share: number }[];
-  }[],
+  categories: Category[],
   state: AccumulationState,
   goldPrice: number,
 ): Transaction {
