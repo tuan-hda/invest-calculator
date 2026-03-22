@@ -25,6 +25,7 @@ interface InvestmentSettingsProps {
   onReset: () => void;
   onConfirmCategories?: () => void;
   onCancelCategories?: () => void;
+  onQuickSelect?: (categoryId: string) => void;
 }
 
 export function InvestmentSettings({
@@ -37,6 +38,7 @@ export function InvestmentSettings({
   onReset,
   onConfirmCategories,
   onCancelCategories,
+  onQuickSelect,
 }: InvestmentSettingsProps) {
   return (
     <Card className="bg-white dark:bg-slate-900">
@@ -81,6 +83,26 @@ export function InvestmentSettings({
               <RotateCcw className="mr-2 h-3 w-3" />
               Reset
             </Button>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: "stocks", label: "Stocks Only" },
+              { id: "bonds", label: "Bonds Only" },
+              { id: "gold", label: "Gold Only" },
+              { id: "savings", label: "Savings Only" },
+              { id: "bitcoin", label: "Bitcoin Only" },
+            ].map((shortcut) => (
+              <Button
+                key={shortcut.id}
+                variant="outline"
+                size="sm"
+                onClick={() => onQuickSelect?.(shortcut.id)}
+                className="text-[10px] uppercase font-bold border-black dark:border-white h-6 px-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+              >
+                {shortcut.label}
+              </Button>
+            ))}
           </div>
 
           <div className="space-y-4">

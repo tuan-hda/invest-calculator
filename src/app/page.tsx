@@ -83,6 +83,17 @@ export default function InvestCalculator() {
     }
   };
 
+  const handleQuickSelect = (categoryId: string) => {
+    const base = categories;
+    const newCategories = base.map((cat) =>
+      cat.id === categoryId
+        ? { ...cat, percentage: 100 }
+        : { ...cat, percentage: 0 },
+    );
+    updateCategories(newCategories);
+    setPendingCategories(null);
+  };
+
   const handleCancelCategories = () => {
     setPendingCategories(null);
   };
@@ -138,6 +149,7 @@ export default function InvestCalculator() {
               onReset={resetDefaults}
               onConfirmCategories={handleConfirmCategories}
               onCancelCategories={handleCancelCategories}
+              onQuickSelect={handleQuickSelect}
               hasPendingChanges={pendingCategories !== null}
             />
             <WalletStatus

@@ -71,7 +71,7 @@ export function InvestmentHistory({ history }: InvestmentHistoryProps) {
                     {formatDate(tx.date, "dd/MM/yyyy")}
                   </TableCell>
                   <TableCell className="font-mono text-xs text-right py-3 align-top">
-                    {Math.round(tx.monthlyAmount / 1000000)}M
+                    {Number((tx.monthlyAmount / 1000000).toFixed(3))}M
                   </TableCell>
                   <TableCell className="text-xs py-2 align-top">
                     <div className="space-y-1">
@@ -82,7 +82,7 @@ export function InvestmentHistory({ history }: InvestmentHistoryProps) {
                               {alloc.name}
                             </span>
                             <span className="font-mono">
-                              {parseFloat((alloc.amount / 1000000).toFixed(1))}M
+                              {Number((alloc.amount / 1000000).toFixed(3))}M
                             </span>
                           </div>
                           {alloc.subAllocations?.map((sub, subIdx) => (
@@ -94,7 +94,7 @@ export function InvestmentHistory({ history }: InvestmentHistoryProps) {
                                 - {sub.name}
                               </span>
                               <span className="font-mono text-gray-400 dark:text-gray-500">
-                                {parseFloat((sub.amount / 1000000).toFixed(1))}M
+                                {Number((sub.amount / 1000000).toFixed(3))}M
                               </span>
                             </div>
                           ))}
