@@ -19,6 +19,7 @@
 - The project has a solid foundation with most core modules implemented but requires further integration and refinement.
 - Documentation and "Memory Bank" are being established for better AI collaboration.
 - The `Market` page now contains an initial BTC short-term price chart backed by an API route.
+- The Market chart build issue caused by a `recharts` tooltip formatter type mismatch has been resolved.
 
 ## Upcoming Tasks
 - Expand the Market page with more assets, indicators, and richer analytics.

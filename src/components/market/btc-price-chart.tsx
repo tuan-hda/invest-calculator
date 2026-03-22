@@ -59,6 +59,16 @@ const compactUsdFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
 
+function formatTooltipValue(
+  value: number | string | ReadonlyArray<number | string> | undefined,
+) {
+  if (typeof value === "number" || typeof value === "string") {
+    return usdFormatter.format(Number(value));
+  }
+
+  return "";
+}
+
 function formatXAxisLabel(timestamp: number, days: number) {
   return new Intl.DateTimeFormat("en-US", {
     month: days === 2 ? "short" : undefined,
@@ -239,7 +249,7 @@ export function BtcPriceChart() {
                   }}
                 />
                 <Tooltip
-                  formatter={(value: number) => usdFormatter.format(value)}
+                  formatter={formatTooltipValue}
                   labelFormatter={(label) => label}
                   contentStyle={{
                     border: "2px solid black",
