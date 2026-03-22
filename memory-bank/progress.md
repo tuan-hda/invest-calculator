@@ -5,6 +5,8 @@
 - **UI System**: Integration of shadcn/ui components.
 - **Database Layer**: Supabase client and hook integration.
 - **Auth Layer**: Clerk authentication integration.
+- **App Navigation**: Sidebar navigation now includes Calculator, Chart, Calendar, and Market routes.
+- **Market Page**: Added a BTC market tracker with 24H/48H charting and external data fetching.
 - **Core Components**:
     - Gold price card and API route.
     - Investment breakdown and history UI (with exact, non-rounded formatting).
@@ -16,8 +18,10 @@
 ## Current Status
 - The project has a solid foundation with most core modules implemented but requires further integration and refinement.
 - Documentation and "Memory Bank" are being established for better AI collaboration.
+- The `Market` page now contains an initial BTC short-term price chart backed by an API route.
 
 ## Upcoming Tasks
+- Expand the Market page with more assets, indicators, and richer analytics.
 - Refine data persistence workflows between frontend and Supabase.
 - Enhance gold price fetching reliability/frequency.
 - Finalize the lunar calendar event management.

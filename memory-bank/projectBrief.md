@@ -21,4 +21,4 @@ A Next.js application designed to help users track investments, calculate accumu
 - **UI Components**: shadcn/ui (Radix UI).
 - **Authentication**: Clerk.
 - **Database**: Supabase.
-- **Utilities**: `vn-lunar` for calendar, `cheerio` for price scraping.
+- **Utilities**: `vn-lunar` for calendar, `cheerio` for price scraping, `recharts` for data visualization.

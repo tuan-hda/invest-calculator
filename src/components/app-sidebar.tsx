@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Calculator, BarChart2, Calendar, LucideIcon } from "lucide-react";
+import {
+  Calculator,
+  BarChart2,
+  Calendar,
+  LineChart,
+  LucideIcon,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
@@ -126,6 +132,11 @@ export function AppSidebar() {
       title: "Calendar",
       url: "/calendar",
       icon: Calendar,
+    },
+    {
+      title: "Market",
+      url: "/market",
+      icon: LineChart,
     },
   ];
 
