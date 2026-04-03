@@ -8,9 +8,13 @@ import { DEFAULT_CATEGORIES } from "@/constants/investment";
 import {
   type Transaction,
   type AccumulationState,
+  type PreCalculationInput,
   DEFAULT_STATE,
-  calculateInvestmentProposal,
+  calculateAccumulation,
+  formatCalculationResult,
   parseGoldPrice,
+  toDirectionalDebt,
+  toSignedDebt,
 } from "@/lib/accumulation-logic";
 import { Category } from "@/types/investment";
 
@@ -29,19 +33,42 @@ type InvestmentHistoryRow = {
   stock_cash_after: number;
   gold_owes_stock_after: number;
   stock_owes_gold_after: number;
+  signed_debt_after: number;
+};
+
+type StoredAccumulationState = Partial<AccumulationState> & {
+  goldOwesStock?: number;
+  stockOwesGold?: number;
 };
 
 function rowToTransaction(row: InvestmentHistoryRow): Transaction {
+  const signedDebtAfter = row.signed_debt_after;
+
   return {
     id: row.transaction_id,
     date: row.created_at,
     monthlyAmount: row.monthly_amount,
     goldPrice: row.gold_price,
+    goldPriceSource: "live",
     action: row.action,
     goldBought: row.gold_bought,
     goldCost: row.gold_cost,
-    goldOwesStockAfter: row.gold_owes_stock_after,
-    stockOwesGoldAfter: row.stock_owes_gold_after,
+    signedDebtAfter,
+    debtDisplayAfter: {
+      direction:
+        signedDebtAfter > 0
+          ? "gold_owes_stock"
+          : signedDebtAfter < 0
+            ? "stock_owes_gold"
+            : "none",
+      amount: Math.abs(signedDebtAfter),
+      label:
+        signedDebtAfter > 0
+          ? "Gold owes Stock"
+          : signedDebtAfter < 0
+            ? "Stock owes Gold"
+            : "No outstanding debt",
+    },
     goldCashAfter: row.gold_cash_after,
     stockCashAfter: row.stock_cash_after,
     allocations: (row.allocations as Transaction["allocations"]) ?? [],
@@ -55,18 +82,15 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
   const [proposal, setProposal] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingPrice, setLoadingPrice] = useState(false);
-
-  // investmentId is the PK of the investments row, needed for foreign key inserts
+  const [goldPriceError, setGoldPriceError] = useState<string | null>(null);
+  const [manualGoldPrice, setManualGoldPrice] = useState<string>("");
   const [investmentId, setInvestmentId] = useState<string | null>(null);
 
-  // Load state from Supabase on mount
   useEffect(() => {
     async function loadState() {
       setLoading(true);
       try {
         const supabase = await getSupabase();
-
-        // 1. Load the investments row (settings / running balances)
         const { data: inv, error: invErr } = await supabase
           .from("investments")
           .select("id, state, portfolio_config")
@@ -78,7 +102,6 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
         }
 
         if (!inv) {
-          // No record yet – use defaults, history is empty
           setState(DEFAULT_STATE);
           setLoading(false);
           return;
@@ -86,7 +109,6 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
 
         setInvestmentId(inv.id);
 
-        // 2. Load history rows ordered newest-first
         const { data: histRows, error: histErr } = await supabase
           .from("investment_history")
           .select("*")
@@ -96,27 +118,29 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
         if (histErr) throw histErr;
 
         const history: Transaction[] = (histRows ?? []).map(
-          (r: InvestmentHistoryRow) => rowToTransaction(r),
+          (row: InvestmentHistoryRow) => rowToTransaction(row),
         );
 
-        // Derive running balances from the most recent history item, falling
-        // back to whatever is stored in the investments.state blob.
         const latest = history[0];
-        const stored = (inv.state ?? {}) as Partial<AccumulationState>;
+        const stored = (inv.state ?? {}) as StoredAccumulationState;
+        const signedDebtFromStored =
+          typeof stored.signedDebt === "number"
+            ? stored.signedDebt
+            : toSignedDebt(
+                stored.goldOwesStock ?? 0,
+                stored.stockOwesGold ?? 0,
+              );
 
         setState({
-          goldOwesStock:
-            latest?.goldOwesStockAfter ?? stored.goldOwesStock ?? 0,
-          stockOwesGold:
-            latest?.stockOwesGoldAfter ?? stored.stockOwesGold ?? 0,
+          signedDebt: latest?.signedDebtAfter ?? signedDebtFromStored ?? 0,
           goldCash: 0,
           stockCash: 0,
           disableInterFundBorrowing: stored.disableInterFundBorrowing ?? false,
           categories: inv.portfolio_config ?? DEFAULT_CATEGORIES,
           history,
         });
-      } catch (e) {
-        console.error("Failed to load state", e);
+      } catch (error) {
+        console.error("Failed to load state", error);
         setState(DEFAULT_STATE);
       } finally {
         setLoading(false);
@@ -124,10 +148,8 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     }
 
     loadState();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [getSupabase, user?.id]);
 
-  // Persist settings (balances + flags) to the investments row
   const persistSettings = useCallback(
     async (
       newState: AccumulationState,
@@ -135,13 +157,18 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     ): Promise<string | null> => {
       if (!user) return existingInvestmentId;
 
+      const { goldOwesStock, stockOwesGold } = toDirectionalDebt(
+        newState.signedDebt,
+      );
+
       const settingsBlob = {
-        goldOwesStock: newState.goldOwesStock,
-        stockOwesGold: newState.stockOwesGold,
+        signedDebt: newState.signedDebt,
+        goldOwesStock,
+        stockOwesGold,
         goldCash: newState.goldCash,
         stockCash: newState.stockCash,
         disableInterFundBorrowing: newState.disableInterFundBorrowing,
-        categories: newState.categories, // Kept for backward compatibility
+        categories: newState.categories,
       };
 
       try {
@@ -162,128 +189,190 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
 
         if (error) throw error;
         return data?.id ?? existingInvestmentId;
-      } catch (e) {
-        console.error("Failed to persist settings to Supabase:", e);
+      } catch (error) {
+        console.error("Failed to persist settings to Supabase:", error);
         return existingInvestmentId;
       }
     },
-    [user, getSupabase],
+    [getSupabase, user],
   );
 
-  // Insert a single transaction into investment_history
   const persistHistoryRow = useCallback(
     async (tx: Transaction, invId: string) => {
       if (!user) return;
+
+      const { goldOwesStock, stockOwesGold } = toDirectionalDebt(
+        tx.signedDebtAfter,
+      );
+      const basePayload = {
+        investment_id: invId,
+        user_id: user.id,
+        transaction_id: tx.id,
+        action: tx.action,
+        gold_cost: tx.goldCost,
+        gold_price: tx.goldPrice,
+        gold_bought: tx.goldBought,
+        allocations: tx.allocations,
+        gold_cash_after: tx.goldCashAfter,
+        monthly_amount: tx.monthlyAmount,
+        stock_cash_after: tx.stockCashAfter,
+        gold_owes_stock_after: goldOwesStock,
+        stock_owes_gold_after: stockOwesGold,
+      };
+
       try {
         const supabase = await getSupabase();
         const { error } = await supabase.from("investment_history").insert({
-          investment_id: invId,
-          user_id: user.id,
-          transaction_id: tx.id,
-          action: tx.action,
-          gold_cost: tx.goldCost,
-          gold_price: tx.goldPrice,
-          gold_bought: tx.goldBought,
-          allocations: tx.allocations,
-          gold_cash_after: tx.goldCashAfter,
-          monthly_amount: tx.monthlyAmount,
-          stock_cash_after: tx.stockCashAfter,
-          gold_owes_stock_after: tx.goldOwesStockAfter,
-          stock_owes_gold_after: tx.stockOwesGoldAfter,
+          ...basePayload,
+          signed_debt_after: tx.signedDebtAfter,
         });
+
         if (error) throw error;
-      } catch (e) {
-        console.error("Failed to persist history row to Supabase:", e);
+      } catch (error) {
+        console.error("Failed to persist history row to Supabase:", error);
       }
     },
-    [user, getSupabase],
+    [getSupabase, user],
   );
 
   const calculateProposal = useCallback(
     async (amount: number, categories: Category[]) => {
       if (!amount || !state) return;
+
       setLoadingPrice(true);
       setProposal(null);
+      setGoldPriceError(null);
 
       try {
-        const result = await fetchGoldPrice();
-        if (!result.success) throw new Error(result.error);
-        const goldData = result.data;
+        const buildProposal = (
+          goldPrice: number,
+          goldPriceSource: "live" | "manual",
+        ) => {
+          const input: PreCalculationInput = {
+            amount,
+            categories,
+            goldPrice,
+            signedDebt: state.signedDebt,
+            interchangeEnabled: !state.disableInterFundBorrowing,
+          };
 
-        const pricePerChi = parseGoldPrice(goldData.price);
-
-        // Disable inter-fund borrowing if either gold or stock percentage is 0%
-        const goldPercentage =
-          categories.find((c) => c.id === "gold")?.percentage ?? 0;
-        const stockPercentage =
-          categories.find((c) => c.id === "stocks")?.percentage ?? 0;
-        const shouldDisableInterFundBorrowing =
-          goldPercentage === 0 || stockPercentage === 0;
-
-        const stateForProposal = {
-          ...state,
-          disableInterFundBorrowing: shouldDisableInterFundBorrowing,
+          const rawResult = calculateAccumulation(input);
+          const formattedResult = formatCalculationResult(rawResult, {
+            goldPriceSource,
+          });
+          setProposal(formattedResult);
         };
 
-        const proposalTrans = calculateInvestmentProposal(
-          amount,
-          categories,
-          stateForProposal,
-          pricePerChi,
+        const getManualGoldPrice = () => {
+          const normalizedManualGoldPrice = parseFloat(
+            manualGoldPrice.replace(/,/g, "").trim(),
+          );
+
+          return Number.isFinite(normalizedManualGoldPrice) &&
+            normalizedManualGoldPrice > 0
+            ? normalizedManualGoldPrice
+            : null;
+        };
+
+        const result = await fetchGoldPrice();
+
+        if (result.success) {
+          buildProposal(parseGoldPrice(result.data.price), "live");
+        } else {
+          const fallbackManualGoldPrice = getManualGoldPrice();
+
+          if (fallbackManualGoldPrice === null) {
+            setGoldPriceError(result.error);
+            return;
+          }
+
+          setGoldPriceError(result.error);
+          buildProposal(fallbackManualGoldPrice, "manual");
+        }
+      } catch (error) {
+        console.error(error);
+        const fallbackManualGoldPrice = parseFloat(
+          manualGoldPrice.replace(/,/g, "").trim(),
         );
 
-        setProposal(proposalTrans);
-      } catch (err) {
-        console.error(err);
+        if (
+          Number.isFinite(fallbackManualGoldPrice) &&
+          fallbackManualGoldPrice > 0
+        ) {
+          const input: PreCalculationInput = {
+            amount,
+            categories,
+            goldPrice: fallbackManualGoldPrice,
+            signedDebt: state.signedDebt,
+            interchangeEnabled: !state.disableInterFundBorrowing,
+          };
+
+          const rawResult = calculateAccumulation(input);
+          const formattedResult = formatCalculationResult(rawResult, {
+            goldPriceSource: "manual",
+          });
+          setProposal(formattedResult);
+          setGoldPriceError(
+            error instanceof Error ? error.message : "Failed to load gold price",
+          );
+        } else {
+          setGoldPriceError(
+            error instanceof Error ? error.message : "Failed to load gold price",
+          );
+        }
       } finally {
         setLoadingPrice(false);
       }
     },
-    [state],
+    [manualGoldPrice, state],
   );
 
   const confirmTransaction = useCallback(async () => {
     if (!proposal || !state || !user) return;
 
     const newState: AccumulationState = {
-      goldOwesStock: proposal.goldOwesStockAfter,
-      stockOwesGold: proposal.stockOwesGoldAfter,
+      signedDebt: proposal.signedDebtAfter,
       goldCash: proposal.goldCashAfter,
       stockCash: proposal.stockCashAfter,
       history: [proposal, ...state.history],
       disableInterFundBorrowing: state.disableInterFundBorrowing,
+      categories: state.categories,
     };
 
     setState(newState);
     setProposal(null);
+    setGoldPriceError(null);
     onConfirm?.();
 
-    // 1. Upsert investments row and get its id
     const invId = await persistSettings(newState, investmentId);
     if (invId && invId !== investmentId) setInvestmentId(invId);
 
-    // 2. Insert the history row
     if (invId) await persistHistoryRow(proposal, invId);
   }, [
+    investmentId,
+    onConfirm,
+    persistHistoryRow,
+    persistSettings,
     proposal,
     state,
     user,
-    onConfirm,
-    investmentId,
-    persistSettings,
-    persistHistoryRow,
   ]);
 
   const resetState = useCallback(async () => {
     if (!user) return;
+
     if (confirm("Are you sure you want to clear all history?")) {
-      setState(DEFAULT_STATE);
+      const resetStateValue = {
+        ...DEFAULT_STATE,
+        categories: state?.categories ?? DEFAULT_CATEGORIES,
+      };
+
+      setState(resetStateValue);
       setProposal(null);
 
       try {
         const supabase = await getSupabase();
 
-        // Delete all history rows for this investment
         if (investmentId) {
           await supabase
             .from("investment_history")
@@ -291,28 +380,30 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
             .eq("investment_id", investmentId);
         }
 
-        // Reset the investments row
-        await persistSettings(DEFAULT_STATE, investmentId);
-      } catch (e) {
-        console.error("Failed to reset state:", e);
+        await persistSettings(resetStateValue, investmentId);
+      } catch (error) {
+        console.error("Failed to reset state:", error);
       }
     }
-  }, [user, investmentId, getSupabase, persistSettings]);
+  }, [getSupabase, investmentId, persistSettings, state?.categories, user]);
 
-  const updateBorrowing = useCallback(
-    async (goldOwesStock: number, stockOwesGold: number) => {
+  const updateSignedDebt = useCallback(
+    async (signedDebt: number) => {
       if (!state || !user) return;
 
-      const newState = { ...state, goldOwesStock, stockOwesGold };
+      const newState = { ...state, signedDebt };
       setState(newState);
       await persistSettings(newState, investmentId);
 
-      // Also patch the most recent history row so the values are correct on next load
       if (investmentId) {
+        const { goldOwesStock, stockOwesGold } = toDirectionalDebt(signedDebt);
+        const baseUpdate = {
+          gold_owes_stock_after: goldOwesStock,
+          stock_owes_gold_after: stockOwesGold,
+        };
+
         try {
           const supabase = await getSupabase();
-
-          // Find the id of the latest history row for this investment
           const { data: latest, error: fetchErr } = await supabase
             .from("investment_history")
             .select("id")
@@ -327,19 +418,19 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
             const { error: updateErr } = await supabase
               .from("investment_history")
               .update({
-                gold_owes_stock_after: goldOwesStock,
-                stock_owes_gold_after: stockOwesGold,
+                ...baseUpdate,
+                signed_debt_after: signedDebt,
               })
               .eq("id", latest.id);
 
             if (updateErr) throw updateErr;
           }
-        } catch (e) {
-          console.error("Failed to update latest history row borrowing:", e);
+        } catch (error) {
+          console.error("Failed to update latest history row borrowing:", error);
         }
       }
     },
-    [state, user, investmentId, persistSettings, getSupabase],
+    [getSupabase, investmentId, persistSettings, state, user],
   );
 
   const toggleDisableInterFundBorrowing = useCallback(async () => {
@@ -352,7 +443,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
 
     setState(newState);
     await persistSettings(newState, investmentId);
-  }, [state, user, investmentId, persistSettings]);
+  }, [investmentId, persistSettings, state, user]);
 
   const updateCategories = useCallback(
     async (categories: Category[]) => {
@@ -362,7 +453,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
       setState(newState);
       await persistSettings(newState, investmentId);
     },
-    [state, user, investmentId, persistSettings],
+    [investmentId, persistSettings, state, user],
   );
 
   return {
@@ -371,12 +462,15 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     categories: state?.categories ?? DEFAULT_CATEGORIES,
     loadingState: loading,
     loadingPrice,
+    goldPriceError,
+    manualGoldPrice,
     calculateProposal,
     confirmTransaction,
     resetState,
-    updateBorrowing,
+    updateSignedDebt,
     updateCategories,
     toggleDisableInterFundBorrowing,
+    setManualGoldPrice,
     clearProposal: () => setProposal(null),
   };
 }

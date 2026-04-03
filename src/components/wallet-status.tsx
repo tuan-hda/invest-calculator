@@ -3,29 +3,33 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PiggyBank } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AccumulationState } from "@/lib/accumulation-logic";
+import {
+  AccumulationState,
+  formatSignedDebt,
+} from "@/lib/accumulation-logic";
 
 import { useState } from "react";
 
 type WalletStatusProps = {
   state: AccumulationState | null;
-  onUpdateBorrowing: (goldOwesStock: number, stockOwesGold: number) => void;
+  onUpdateSignedDebt: (signedDebt: number) => void;
   onToggleDisableInterFundBorrowing: () => void;
 };
 
 export function WalletStatus({
   state,
-  onUpdateBorrowing,
+  onUpdateSignedDebt,
   onToggleDisableInterFundBorrowing,
 }: WalletStatusProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editGoldOwes, setEditGoldOwes] = useState(0);
-  const [editStockOwes, setEditStockOwes] = useState(0);
+  const [editSignedDebt, setEditSignedDebt] = useState(0);
 
   if (!state) return null;
 
+  const debtDisplay = formatSignedDebt(state.signedDebt);
+
   const handleSave = () => {
-    onUpdateBorrowing(editGoldOwes, editStockOwes);
+    onUpdateSignedDebt(editSignedDebt);
     setIsEditing(false);
   };
 
@@ -89,8 +93,7 @@ export function WalletStatus({
               variant="link"
               size="sm"
               onClick={() => {
-                setEditGoldOwes(state.goldOwesStock);
-                setEditStockOwes(state.stockOwesGold);
+                setEditSignedDebt(state.signedDebt);
                 setIsEditing(true);
               }}
               className="h-auto p-0 text-blue-600 dark:text-blue-400 font-bold text-xs uppercase"
@@ -104,25 +107,17 @@ export function WalletStatus({
           <div className="space-y-4 p-3 border-2 border-dashed border-black dark:border-white rounded bg-gray-50 dark:bg-gray-900/10">
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-gray-500">
-                Gold owes Stock (VND)
+                Signed Debt (VND)
               </label>
               <input
                 type="number"
-                value={editGoldOwes}
-                onChange={(e) => setEditGoldOwes(Number(e.target.value))}
+                value={editSignedDebt}
+                onChange={(e) => setEditSignedDebt(Number(e.target.value))}
                 className="w-full p-2 border-2 border-black dark:border-white bg-white dark:bg-slate-800 font-mono font-bold text-sm"
               />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-gray-500">
-                Stock owes Gold (VND)
-              </label>
-              <input
-                type="number"
-                value={editStockOwes}
-                onChange={(e) => setEditStockOwes(Number(e.target.value))}
-                className="w-full p-2 border-2 border-black dark:border-white bg-white dark:bg-slate-800 font-mono font-bold text-sm"
-              />
+              <p className="text-[10px] font-bold text-gray-500">
+                Positive = Gold owes Stock. Negative = Stock owes Gold.
+              </p>
             </div>
             <div className="flex gap-2 pt-2">
               <Button
@@ -140,7 +135,7 @@ export function WalletStatus({
               </Button>
             </div>
           </div>
-        ) : state.goldOwesStock === 0 && state.stockOwesGold === 0 ? (
+        ) : debtDisplay.direction === "none" ? (
           <div className="p-4 border border-dashed border-black dark:border-white rounded bg-gray-50 dark:bg-gray-900/10 text-center">
             <div className="text-sm font-bold text-gray-400 dark:text-gray-500">
               No outstanding debts
@@ -148,23 +143,23 @@ export function WalletStatus({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-2">
-            {state.goldOwesStock > 0 && (
+            {debtDisplay.direction === "gold_owes_stock" && (
               <div className="p-3 border-2 border-black dark:border-white rounded bg-yellow-300 dark:bg-red-900/10 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
                 <div className="text-[10px] font-black uppercase text-black dark:text-red-400 mb-1">
                   Gold owes Stock
                 </div>
                 <div className="font-mono font-bold text-lg text-red-600 dark:text-red-400">
-                  {formatCurrency(state.goldOwesStock)}
+                  {formatCurrency(debtDisplay.amount)}
                 </div>
               </div>
             )}
-            {state.stockOwesGold > 0 && (
+            {debtDisplay.direction === "stock_owes_gold" && (
               <div className="p-3 border-2 border-black dark:border-white rounded bg-orange-50 dark:bg-orange-900/10 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
                 <div className="text-[10px] font-black uppercase text-orange-700 dark:text-orange-400 mb-1">
                   Stock owes Gold
                 </div>
                 <div className="font-mono font-bold text-lg text-orange-600 dark:text-orange-400">
-                  {formatCurrency(state.stockOwesGold)}
+                  {formatCurrency(debtDisplay.amount)}
                 </div>
               </div>
             )}

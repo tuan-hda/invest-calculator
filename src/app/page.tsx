@@ -36,11 +36,14 @@ export default function InvestCalculator() {
     categories,
     loadingState,
     loadingPrice,
+    goldPriceError,
+    manualGoldPrice,
     calculateProposal,
     confirmTransaction,
-    updateBorrowing,
+    updateSignedDebt,
     updateCategories,
     toggleDisableInterFundBorrowing,
+    setManualGoldPrice,
     clearProposal,
   } = useAccumulation({
     onConfirm: () => {
@@ -154,7 +157,7 @@ export default function InvestCalculator() {
             />
             <WalletStatus
               state={accumulationState}
-              onUpdateBorrowing={updateBorrowing}
+              onUpdateSignedDebt={updateSignedDebt}
               onToggleDisableInterFundBorrowing={
                 toggleDisableInterFundBorrowing
               }
@@ -193,6 +196,14 @@ export default function InvestCalculator() {
                     <AccumulationPlan
                       loadingPrice={loadingPrice}
                       proposal={proposal}
+                      goldPriceError={goldPriceError}
+                      manualGoldPrice={manualGoldPrice}
+                      onManualGoldPriceChange={setManualGoldPrice}
+                      onApplyManualGoldPrice={() => {
+                        if (typeof amount === "number" && amount > 0) {
+                          calculateProposal(amount, categories);
+                        }
+                      }}
                       onConfirm={confirmTransaction}
                     />
                   </div>

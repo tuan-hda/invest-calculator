@@ -9,11 +9,12 @@ import {
 } from "@/components/ui/table";
 import { Category } from "@/types/investment";
 import { formatCurrency } from "@/lib/utils";
+import { Transaction } from "@/lib/accumulation-logic";
 
 interface InvestmentBreakdownProps {
   amount: number | "";
   categories: Category[];
-  proposal: any; // Ideally we export the Proposal type from useAccumulation
+  proposal: Transaction | null;
   totalPercentage: number;
 }
 
@@ -56,7 +57,7 @@ export function InvestmentBreakdown({
             let marketValue = 0;
             if (proposal && proposal.allocations) {
               const alloc = proposal.allocations.find(
-                (a: any) => a.id === category.id,
+                (a) => a.id === category.id,
               );
               marketValue = alloc ? alloc.amount : 0;
             } else {

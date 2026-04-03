@@ -20,6 +20,14 @@
 - Documentation and "Memory Bank" are being established for better AI collaboration.
 - The `Market` page now contains an initial BTC short-term price chart backed by an API route.
 - The Market chart build issue caused by a `recharts` tooltip formatter type mismatch has been resolved.
+- Agent guidance now explicitly instructs direct commits to `main`.
+- The accumulation engine and `useAccumulation` hook have been reviewed to capture the current transaction, borrowing, and persistence behavior.
+- The accumulation engine no longer contains the stray `debugger;` statement.
+- A permanent accumulation logic reference and flowchart now exists in `docs/accumulation-flow.md`.
+- The accumulation engine now uses a 3-stage architecture: pre-calculation input assembly, pure calculation, and result formatting.
+- Internal debt tracking has been simplified to a single signed debt value, while history persistence still writes compatibility directional columns.
+- A Supabase SQL migration reference for `signed_debt_after` now exists in `docs/supabase-signed-debt-migration.sql`.
+- The calculator now supports a local-only manual gold price fallback when live price loading fails, without persisting that manual input.
 
 ## Upcoming Tasks
 - Expand the Market page with more assets, indicators, and richer analytics.
