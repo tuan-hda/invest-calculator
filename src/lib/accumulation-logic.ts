@@ -25,6 +25,7 @@ export type DebtDisplay = {
 
 export type Transaction = {
   id: string;
+  historyRowId?: string;
   date: string;
   monthlyAmount: number;
   goldPrice: number;

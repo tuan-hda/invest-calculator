@@ -28,12 +28,15 @@ export default function ChartPage() {
       latest.allocations.find((a) => a.id === "stocks")?.amount || 0;
     const bonds = latest.allocations.find((a) => a.id === "bonds")?.amount || 0;
     const gold = latest.allocations.find((a) => a.id === "gold")?.amount || 0;
+    const bitcoin =
+      latest.allocations.find((a) => a.id === "bitcoin")?.amount || 0;
 
     return {
       stocks,
       bonds,
       gold,
-      total: stocks + bonds + gold,
+      bitcoin,
+      total: stocks + bonds + gold + bitcoin,
       date: latest.date,
       formattedDate: formatInvestDate(latest.date),
     };

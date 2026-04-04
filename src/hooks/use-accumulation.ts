@@ -3,6 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useSupabase } from "@/hooks/use-supabase";
+import {
+  buildAccumulationStateFromHistory,
+  useHistoryDeletion,
+} from "@/hooks/use-history-deletion";
 import { fetchGoldPrice, type GoldData } from "@/lib/gold-price-client";
 import { DEFAULT_CATEGORIES } from "@/constants/investment";
 import {
@@ -46,6 +50,7 @@ function rowToTransaction(row: InvestmentHistoryRow): Transaction {
 
   return {
     id: row.transaction_id,
+    historyRowId: row.id,
     date: row.created_at,
     monthlyAmount: row.monthly_amount,
     goldPrice: row.gold_price,
@@ -172,7 +177,6 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
           (row: InvestmentHistoryRow) => rowToTransaction(row),
         );
 
-        const latest = history[0];
         const stored = (inv.state ?? {}) as StoredAccumulationState;
         const signedDebtFromStored =
           typeof stored.signedDebt === "number"
@@ -181,14 +185,14 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
                 stored.goldOwesStock ?? 0,
                 stored.stockOwesGold ?? 0,
               );
-
         setState({
-          signedDebt: latest?.signedDebtAfter ?? signedDebtFromStored ?? 0,
-          goldCash: 0,
-          stockCash: 0,
-          disableInterFundBorrowing: stored.disableInterFundBorrowing ?? false,
-          categories: inv.portfolio_config ?? DEFAULT_CATEGORIES,
-          history,
+          ...buildAccumulationStateFromHistory(history, {
+            ...DEFAULT_STATE,
+            disableInterFundBorrowing:
+              stored.disableInterFundBorrowing ?? DEFAULT_STATE.disableInterFundBorrowing,
+            categories: inv.portfolio_config ?? DEFAULT_CATEGORIES,
+          }),
+          signedDebt: history[0]?.signedDebtAfter ?? signedDebtFromStored ?? 0,
         });
       } catch (error) {
         console.error("Failed to load state", error);
@@ -477,6 +481,15 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     [investmentId, persistSettings, state, user],
   );
 
+  const { deleteHistoryRows, deletingHistory } = useHistoryDeletion({
+    getSupabase,
+    investmentId,
+    persistSettings,
+    state,
+    setState,
+    userId: user?.id,
+  });
+
   return {
     state,
     proposal,
@@ -499,5 +512,7 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     clearManualGoldPrice: () => setManualGoldPrice(""),
     refreshLiveGoldPrice,
     clearProposal: () => setProposal(null),
+    deleteHistoryRows,
+    deletingHistory,
   };
 }

@@ -51,6 +51,8 @@ export default function InvestCalculator() {
     clearManualGoldPrice,
     refreshLiveGoldPrice,
     clearProposal,
+    deleteHistoryRows,
+    deletingHistory,
   } = useAccumulation({
     onConfirm: () => {
       setAmount("");
@@ -227,7 +229,11 @@ export default function InvestCalculator() {
 
             {/* History Table */}
             {accumulationState && accumulationState.history.length > 0 && (
-              <InvestmentHistory history={accumulationState.history} />
+              <InvestmentHistory
+                history={accumulationState.history}
+                onDeleteRows={deleteHistoryRows}
+                deletingRows={deletingHistory}
+              />
             )}
           </div>
         </div>

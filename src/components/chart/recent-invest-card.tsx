@@ -10,6 +10,7 @@ interface RecentInvestData {
   stocks: number;
   bonds: number;
   gold: number;
+  bitcoin: number;
   total: number;
   date: string;
   formattedDate: string;
@@ -96,6 +97,15 @@ export function RecentInvestCard({ recentInvest }: RecentInvestCardProps) {
                     <span>Gold</span>
                     <span>
                       {new Intl.NumberFormat("vi-VN").format(recentInvest.gold)}
+                      đ
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center font-bold border-b border-black/10 dark:border-white/10 pb-2">
+                    <span>Crypto</span>
+                    <span>
+                      {new Intl.NumberFormat("vi-VN").format(
+                        recentInvest.bitcoin,
+                      )}
                       đ
                     </span>
                   </div>
