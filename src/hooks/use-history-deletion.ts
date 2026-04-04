@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState, type Dispatch, type SetStateAction } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { DEFAULT_CATEGORIES } from "@/constants/investment";
 import {
   type AccumulationState,
@@ -12,18 +13,7 @@ type PersistSettings = (
   existingInvestmentId: string | null,
 ) => Promise<string | null>;
 
-type GetSupabase = () => Promise<{
-  from: (table: string) => {
-    delete: () => {
-      eq: (column: string, value: string) => {
-        in: (
-          column: string,
-          values: string[],
-        ) => Promise<{ error: { message: string } | null }>;
-      };
-    };
-  };
-}>;
+type GetSupabase = () => Promise<SupabaseClient>;
 
 export function buildAccumulationStateFromHistory(
   history: Transaction[],
