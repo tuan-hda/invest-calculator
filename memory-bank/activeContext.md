@@ -21,6 +21,8 @@
 - Added a paste-ready SQL migration reference at `docs/supabase-signed-debt-migration.sql`.
 - Added a local-only manual gold price fallback for the calculator when live gold price loading fails.
 - The manual fallback appears in the accumulation plan area, can be reused during the current page session, and visibly marks proposals that used a manual price.
+- Moved manual gold price control into the Gold Price card and made it always available, with manual value becoming the active calculation source until cleared.
+- The Gold Price card now shows the active calculation price source (`Live` or `Manual`) and refreshes live data without disabling manual override.
 
 ## Next Steps
 - Add more market instruments and metrics to the Market page.

@@ -37,13 +37,19 @@ export default function InvestCalculator() {
     loadingState,
     loadingPrice,
     goldPriceError,
+    liveGoldPriceData,
+    loadingLiveGoldPrice,
+    liveGoldPriceError,
     manualGoldPrice,
+    isManualGoldPriceActive,
     calculateProposal,
     confirmTransaction,
     updateSignedDebt,
     updateCategories,
     toggleDisableInterFundBorrowing,
     setManualGoldPrice,
+    clearManualGoldPrice,
+    refreshLiveGoldPrice,
     clearProposal,
   } = useAccumulation({
     onConfirm: () => {
@@ -162,7 +168,16 @@ export default function InvestCalculator() {
                 toggleDisableInterFundBorrowing
               }
             />
-            <GoldPriceCard />
+            <GoldPriceCard
+              liveGoldPriceData={liveGoldPriceData}
+              loadingLiveGoldPrice={loadingLiveGoldPrice}
+              liveGoldPriceError={liveGoldPriceError}
+              manualGoldPrice={manualGoldPrice}
+              isManualGoldPriceActive={isManualGoldPriceActive}
+              onManualGoldPriceChange={setManualGoldPrice}
+              onClearManualGoldPrice={clearManualGoldPrice}
+              onRefreshLiveGoldPrice={() => refreshLiveGoldPrice(true)}
+            />
           </div>
 
           {/* Results Section */}
@@ -197,13 +212,6 @@ export default function InvestCalculator() {
                       loadingPrice={loadingPrice}
                       proposal={proposal}
                       goldPriceError={goldPriceError}
-                      manualGoldPrice={manualGoldPrice}
-                      onManualGoldPriceChange={setManualGoldPrice}
-                      onApplyManualGoldPrice={() => {
-                        if (typeof amount === "number" && amount > 0) {
-                          calculateProposal(amount, categories);
-                        }
-                      }}
                       onConfirm={confirmTransaction}
                     />
                   </div>

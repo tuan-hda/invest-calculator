@@ -28,6 +28,7 @@
 - Internal debt tracking has been simplified to a single signed debt value, while history persistence still writes compatibility directional columns.
 - A Supabase SQL migration reference for `signed_debt_after` now exists in `docs/supabase-signed-debt-migration.sql`.
 - The calculator now supports a local-only manual gold price fallback when live price loading fails, without persisting that manual input.
+- Manual gold price management now lives in the Gold Price card and is always available, not just when live fetch fails.
 
 ## Upcoming Tasks
 - Expand the Market page with more assets, indicators, and richer analytics.

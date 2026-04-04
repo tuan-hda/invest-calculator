@@ -8,9 +8,6 @@ interface AccumulationPlanProps {
   loadingPrice: boolean;
   proposal: Transaction | null;
   goldPriceError: string | null;
-  manualGoldPrice: string;
-  onManualGoldPriceChange: (value: string) => void;
-  onApplyManualGoldPrice: () => void;
   onConfirm: () => void;
 }
 
@@ -18,9 +15,6 @@ export function AccumulationPlan({
   loadingPrice,
   proposal,
   goldPriceError,
-  manualGoldPrice,
-  onManualGoldPriceChange,
-  onApplyManualGoldPrice,
   onConfirm,
 }: AccumulationPlanProps) {
   return (
@@ -49,33 +43,12 @@ export function AccumulationPlan({
               )}
             </div>
           ) : goldPriceError ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="text-sm font-bold text-red-600">
                 {goldPriceError}
               </div>
-              <div className="space-y-2">
-                <label className="block text-[10px] font-black uppercase tracking-wide text-gray-500">
-                  Manual Gold Price
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={manualGoldPrice}
-                  onChange={(e) =>
-                    onManualGoldPriceChange(
-                      e.target.value.replace(/[^0-9,]/g, ""),
-                    )
-                  }
-                  placeholder="Enter gold price per chi"
-                  className="w-full border-2 border-black bg-white px-3 py-2 font-mono font-bold text-sm text-black dark:border-white dark:bg-slate-900 dark:text-white"
-                />
-                <Button
-                  type="button"
-                  onClick={onApplyManualGoldPrice}
-                  className="font-bold uppercase bg-yellow-300 text-black hover:bg-yellow-400 border-2 border-black dark:border-white"
-                >
-                  Use Manual Price
-                </Button>
+              <div className="text-xs font-bold text-gray-500">
+                Update the Gold Price card to continue calculation.
               </div>
             </div>
           ) : (

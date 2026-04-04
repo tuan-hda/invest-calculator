@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useSupabase } from "@/hooks/use-supabase";
-import { fetchGoldPrice } from "@/lib/gold-price-client";
+import { fetchGoldPrice, type GoldData } from "@/lib/gold-price-client";
 import { DEFAULT_CATEGORIES } from "@/constants/investment";
 import {
   type Transaction,
@@ -82,9 +82,60 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
   const [proposal, setProposal] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingPrice, setLoadingPrice] = useState(false);
+  const [liveGoldPriceData, setLiveGoldPriceData] = useState<GoldData | null>(
+    null,
+  );
+  const [loadingLiveGoldPrice, setLoadingLiveGoldPrice] = useState(false);
+  const [liveGoldPriceError, setLiveGoldPriceError] = useState<string | null>(
+    null,
+  );
   const [goldPriceError, setGoldPriceError] = useState<string | null>(null);
   const [manualGoldPrice, setManualGoldPrice] = useState<string>("");
   const [investmentId, setInvestmentId] = useState<string | null>(null);
+
+  const getManualGoldPriceValue = useCallback(() => {
+    const normalizedManualGoldPrice = parseFloat(
+      manualGoldPrice.replace(/,/g, "").trim(),
+    );
+
+    return Number.isFinite(normalizedManualGoldPrice) &&
+      normalizedManualGoldPrice > 0
+      ? normalizedManualGoldPrice
+      : null;
+  }, [manualGoldPrice]);
+
+  const isManualGoldPriceActive = getManualGoldPriceValue() !== null;
+
+  const refreshLiveGoldPrice = useCallback(
+    async (forceRefresh = false) => {
+      setLoadingLiveGoldPrice(true);
+      setLiveGoldPriceError(null);
+
+      try {
+        const result = await fetchGoldPrice(forceRefresh);
+
+        if (!result.success) {
+          setLiveGoldPriceError(result.error);
+          return null;
+        }
+
+        setLiveGoldPriceData(result.data);
+        return result.data;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to load gold price";
+        setLiveGoldPriceError(message);
+        return null;
+      } finally {
+        setLoadingLiveGoldPrice(false);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    refreshLiveGoldPrice();
+  }, [refreshLiveGoldPrice]);
 
   useEffect(() => {
     async function loadState() {
@@ -263,68 +314,38 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
           setProposal(formattedResult);
         };
 
-        const getManualGoldPrice = () => {
-          const normalizedManualGoldPrice = parseFloat(
-            manualGoldPrice.replace(/,/g, "").trim(),
-          );
+        const manualOverridePrice = getManualGoldPriceValue();
+        if (manualOverridePrice !== null) {
+          buildProposal(manualOverridePrice, "manual");
+          return;
+        }
 
-          return Number.isFinite(normalizedManualGoldPrice) &&
-            normalizedManualGoldPrice > 0
-            ? normalizedManualGoldPrice
-            : null;
-        };
+        const liveGoldData =
+          liveGoldPriceData ?? (await refreshLiveGoldPrice(false));
 
-        const result = await fetchGoldPrice();
-
-        if (result.success) {
-          buildProposal(parseGoldPrice(result.data.price), "live");
+        if (liveGoldData) {
+          buildProposal(parseGoldPrice(liveGoldData.price), "live");
         } else {
-          const fallbackManualGoldPrice = getManualGoldPrice();
-
-          if (fallbackManualGoldPrice === null) {
-            setGoldPriceError(result.error);
-            return;
-          }
-
-          setGoldPriceError(result.error);
-          buildProposal(fallbackManualGoldPrice, "manual");
+          setGoldPriceError(
+            liveGoldPriceError ?? "Failed to load gold price for calculation",
+          );
         }
       } catch (error) {
         console.error(error);
-        const fallbackManualGoldPrice = parseFloat(
-          manualGoldPrice.replace(/,/g, "").trim(),
+        setGoldPriceError(
+          error instanceof Error ? error.message : "Failed to load gold price",
         );
-
-        if (
-          Number.isFinite(fallbackManualGoldPrice) &&
-          fallbackManualGoldPrice > 0
-        ) {
-          const input: PreCalculationInput = {
-            amount,
-            categories,
-            goldPrice: fallbackManualGoldPrice,
-            signedDebt: state.signedDebt,
-            interchangeEnabled: !state.disableInterFundBorrowing,
-          };
-
-          const rawResult = calculateAccumulation(input);
-          const formattedResult = formatCalculationResult(rawResult, {
-            goldPriceSource: "manual",
-          });
-          setProposal(formattedResult);
-          setGoldPriceError(
-            error instanceof Error ? error.message : "Failed to load gold price",
-          );
-        } else {
-          setGoldPriceError(
-            error instanceof Error ? error.message : "Failed to load gold price",
-          );
-        }
       } finally {
         setLoadingPrice(false);
       }
     },
-    [manualGoldPrice, state],
+    [
+      getManualGoldPriceValue,
+      liveGoldPriceData,
+      liveGoldPriceError,
+      refreshLiveGoldPrice,
+      state,
+    ],
   );
 
   const confirmTransaction = useCallback(async () => {
@@ -463,7 +484,11 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     loadingState: loading,
     loadingPrice,
     goldPriceError,
+    liveGoldPriceData,
+    loadingLiveGoldPrice,
+    liveGoldPriceError,
     manualGoldPrice,
+    isManualGoldPriceActive,
     calculateProposal,
     confirmTransaction,
     resetState,
@@ -471,6 +496,8 @@ export function useAccumulation({ onConfirm }: { onConfirm?: () => void }) {
     updateCategories,
     toggleDisableInterFundBorrowing,
     setManualGoldPrice,
+    clearManualGoldPrice: () => setManualGoldPrice(""),
+    refreshLiveGoldPrice,
     clearProposal: () => setProposal(null),
   };
 }
