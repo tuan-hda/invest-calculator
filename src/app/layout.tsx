@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppSidebar } from "@/components/app-sidebar";
+import { ChatwootWidget } from "@/components/chatwoot-widget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,6 +46,7 @@ export default function RootLayout({
               </main>
             </div>
           </ThemeProvider>
+          <ChatwootWidget />
         </body>
       </html>
     </ClerkProvider>
